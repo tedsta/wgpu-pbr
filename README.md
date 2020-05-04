@@ -4,6 +4,16 @@ wgpu-pbr is a realtime physically-based renderer (PBR) intended for use in games
 
 Credit is due to rendy-pbr and Amethyst, which the shaders are heavily derived from. Author is by no means a graphics programmer.
 
+## Run the example
+
+```
+git clone https://github.com/tedsta/wgpu-pbr
+cd wgpu-pbr
+wget https://www.dropbox.com/s/5rl9ji77s3qnhdk/assets.zip
+unzip assets.zip
+cargo run --release --example scene_viewer
+```
+
 ## Screenshots
 
 [![screenshot](screenshots/wgpu-pbr-scifi-helmet.png)]()

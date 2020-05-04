@@ -1,5 +1,5 @@
 pub use camera::Camera;
-pub use mesh::{Mesh, MeshPass, LightData, SpotLightData};
+pub use mesh::{Mesh, MeshPass, PointLightData, SpotLightData};
 pub use renderer::Renderer;
 pub use scene::{Scene, MeshId};
 pub use mesh::{MeshPartData, MeshPartGeometry};

@@ -9,16 +9,16 @@ use super::{
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
-pub struct LightData {
+pub struct PointLightData {
     pub pos: [f32; 3],
     pub intensity: f32,
     pub color: [f32; 3],
     _pad: u32,
 }
 
-impl LightData {
+impl PointLightData {
     pub fn new(pos: [f32; 3], intensity: f32, color: [f32; 3]) -> Self {
-        LightData { pos, intensity, color, _pad: 0 }
+        PointLightData { pos, intensity, color, _pad: 0 }
     }
 }
 
@@ -56,7 +56,7 @@ struct GlobalUniforms {
     view_proj: [f32; 16],
     camera_pos: [f32; 3],
     num_point_lights: i32,
-    point_lights: [LightData; 32],
+    point_lights: [PointLightData; 32],
     num_spot_lights: i32,
     _pad0: [u32; 3],
     spot_lights: [SpotLightData; 32],
@@ -122,7 +122,7 @@ impl MeshPass {
             view_proj: *mx_total.as_ref(),
             camera_pos: [0.0, 0.0, 0.0],
             num_point_lights: 0,
-            point_lights: [LightData::new([0.0; 3], 0.0, [0.0; 3]); 32],
+            point_lights: [PointLightData::new([0.0; 3], 0.0, [0.0; 3]); 32],
             num_spot_lights: 0,
             _pad0: [0; 3],
             spot_lights: [SpotLightData::zero(); 32],
@@ -227,7 +227,7 @@ impl MeshPass {
     ) {
         // Update camera
         let mx_total = scene.camera.total_matrix();
-        let mut point_lights = [LightData::new([0.0, 0.0, 0.0], 0.0, [0.0; 3]); 32];
+        let mut point_lights = [PointLightData::new([0.0, 0.0, 0.0], 0.0, [0.0; 3]); 32];
         for (i, light) in scene.point_lights.iter().enumerate() {
             point_lights[i] = *light;
         }

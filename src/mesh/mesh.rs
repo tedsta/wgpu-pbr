@@ -16,6 +16,8 @@ pub struct Mesh {
 }
 
 impl Mesh {
+    /// Create a new mesh from its "parts" (aka primitives). A `MeshPart` has a triangle mesh and a
+    /// single material. A multi-material `Mesh` must be composed of multiple `MeshPart`s.
     pub fn from_parts(
         device: &mut wgpu::Device,
         mesh_pass: &MeshPass,

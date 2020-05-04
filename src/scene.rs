@@ -1,12 +1,12 @@
 use super::Camera;
-use super::mesh::{Mesh, LightData, SpotLightData};
+use super::mesh::{Mesh, PointLightData, SpotLightData};
 
 pub type MeshId = slotmap::DefaultKey;
 
 pub struct Scene {
     pub camera: Camera,
     pub meshes: slotmap::DenseSlotMap<MeshId, Mesh>,
-    pub point_lights: Vec<LightData>,
+    pub point_lights: Vec<PointLightData>,
     pub spot_lights: Vec<SpotLightData>,
 }
 

@@ -10,4 +10,4 @@ pub use geometry::{MeshPartGeometry, Vertex};
 pub use material::MaterialFactors;
 pub use mesh::Mesh;
 pub use mesh_part::{MeshPart, MeshPartData};
-pub use mesh_pass::{MeshPass, LightData, SpotLightData};
+pub use mesh_pass::{MeshPass, PointLightData, SpotLightData};

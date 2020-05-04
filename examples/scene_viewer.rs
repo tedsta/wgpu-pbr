@@ -5,7 +5,7 @@ use cgmath::{Transform, SquareMatrix, InnerSpace};
 
 use wgpu_glyph::{Section, GlyphBrushBuilder};
 
-use wgpu_pbr::{Camera, Renderer, Scene, LightData, SpotLightData};
+use wgpu_pbr::{Camera, Renderer, Scene, PointLightData, SpotLightData};
 
 pub struct PlayerInput {
     pub forward: bool,
@@ -374,7 +374,7 @@ impl SceneDescription {
     pub fn build_scene(&self, renderer: &mut Renderer, scene: &mut Scene) {
         if let Some(ref point_lights) = self.point_light {
             for point_light in point_lights {
-                scene.point_lights.push(LightData::new(
+                scene.point_lights.push(PointLightData::new(
                     [point_light.x, point_light.y, point_light.z],
                     point_light.intensity,
                     [point_light.red, point_light.green, point_light.blue],

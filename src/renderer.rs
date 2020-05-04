@@ -1,0 +1,99 @@
+use std::path::Path;
+
+use crate::resources::{Resources, ResourceLoader};
+use super::mesh::{Mesh, MeshPass, MeshPartData};
+use super::obj::load_obj;
+use super::gltf::{load_gltf, load_gltf_single_mesh, GltfLoadError};
+use super::scene::Scene;
+
+pub struct Renderer {
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub resources: Resources,
+    pub mesh_pass: MeshPass,
+}
+
+impl Renderer {
+    pub fn new(
+        sc_desc: &wgpu::SwapChainDescriptor,
+        mut device: wgpu::Device,
+        mut queue: wgpu::Queue,
+    ) -> Renderer {
+        let mesh_pass = MeshPass::init(&sc_desc, &mut device, &mut queue);
+
+        Renderer {
+            device,
+            queue,
+            resources: Resources::new(),
+            mesh_pass,
+        }
+    }
+
+    pub fn render(
+        &mut self,
+        render_target: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        scene: &Scene,
+    ) {
+        self.mesh_pass.render(&self.device, render_target, encoder, scene);
+    }
+
+    pub fn mesh_from_file(&mut self, path: impl AsRef<std::path::Path>, lighting: bool) -> Mesh {
+        let mesh_parts = self.mesh_parts_from_file(path);
+        self.mesh_from_parts(&mesh_parts, lighting)
+    }
+
+    pub fn mesh_from_parts(&mut self, parts: &[MeshPartData], lighting: bool) -> Mesh {
+        Mesh::from_parts(
+            &mut self.device,
+            &self.mesh_pass,
+            lighting,
+            parts,
+        )
+    }
+
+    pub fn mesh_parts_from_file(&mut self, path: impl AsRef<Path>) -> Vec<MeshPartData> {
+        let mut encoder = self.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::mesh_parts_from_file") }
+        );
+
+        let mut resource_loader = ResourceLoader::new(
+            &mut self.device, &mut encoder, &mut self.resources,
+        );
+
+        let ext = path.as_ref().extension()
+            .expect(&format!("Failed to load mesh '{}' - unknown file type.", path.as_ref().display()));
+        let mesh_parts =
+            if ext == "obj" {
+                load_obj(&mut resource_loader, path)
+            } else if ext == "glb" || ext == "gltf" {
+                load_gltf(&mut resource_loader, path).expect("load gltf")
+            } else {
+                // TODO don't panic
+                panic!("Failed to load mesh '{}' - unknown file type.", path.as_ref().display());
+            };
+
+        self.queue.submit(&[encoder.finish()]);
+        
+        mesh_parts
+    }
+
+    pub fn gltf_single_mesh_parts(
+        &mut self, path: impl AsRef<Path>, mesh_name: &str,
+    ) -> Result<Option<(Vec<MeshPartData>, gltf::scene::Transform)>, GltfLoadError> {
+        let mut encoder = self.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::gltf_single_mesh_parts") }
+        );
+
+        let mut resource_loader = ResourceLoader::new(
+            &mut self.device, &mut encoder, &mut self.resources,
+        );
+
+        let maybe_mesh_parts = load_gltf_single_mesh(&mut resource_loader, path, mesh_name)?;
+
+        self.queue.submit(&[encoder.finish()]);
+
+        Ok(maybe_mesh_parts)
+    }
+}
+

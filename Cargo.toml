@@ -1,0 +1,31 @@
+[package]
+name = "wgpu-pbr"
+version = "0.1.0"
+authors = ["Teddy DeRego <tderego94@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = "=0.5.0"
+tobj = "*"
+image = "*"
+bytemuck = "1"
+futures = "0.3"
+
+cgmath = "0.17"
+#ultraviolet = "=0.4.5"
+#wide = "=0.4.3"
+
+slotmap = "0.4.0"
+
+mikktspace = "0.2.0"
+
+gltf = "*"
+
+[dev-dependencies]
+winit = "=0.22.1"
+wgpu_glyph = "=0.8.0"
+serde = "*"
+serde_derive = "*"
+toml = "*"

@@ -1,6 +1,6 @@
 [package]
 name = "wgpu-pbr"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Teddy DeRego <tderego94@gmail.com>"]
 edition = "2018"
 

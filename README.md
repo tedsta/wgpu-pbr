@@ -2,7 +2,7 @@
 
 wgpu-pbr is a realtime physically-based renderer (PBR) intended for use in games. It is not a game engine - you will still need to handle input, build a game loop, fix your timestep, integrate with a physics engine, etc.
 
-Credit is due to rendy-pbr and Amethyst, which the shaders are heavily derived from. Author is by no means a graphics programmer.
+Credit is due to [rendy-pbr](https://github.com/termhn/rendy-pbr) and [Amethyst](https://github.com/amethyst/amethyst/blob/57a8a2345848e99c96c3d6fca13d952a367c1058/amethyst_rendy/shaders/), which the shaders are heavily derived from.
 
 ## Run the example
 

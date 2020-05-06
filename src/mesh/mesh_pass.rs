@@ -20,6 +20,15 @@ impl PointLightData {
     pub fn new(pos: [f32; 3], intensity: f32, color: [f32; 3]) -> Self {
         PointLightData { pos, intensity, color, _pad: 0 }
     }
+
+    pub fn zero() -> Self {
+        PointLightData {
+            pos: [0.0; 3],
+            intensity: 0.0,
+            color: [0.0; 3],
+            _pad: 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -228,12 +237,12 @@ impl MeshPass {
         // Update camera
         let mx_total = scene.camera.total_matrix();
         let mut point_lights = [PointLightData::new([0.0, 0.0, 0.0], 0.0, [0.0; 3]); 32];
-        for (i, light) in scene.point_lights.iter().enumerate() {
+        for (i, light) in scene.point_lights.values().enumerate() {
             point_lights[i] = *light;
         }
 
         let mut spot_lights = [SpotLightData::zero(); 32];
-        for (i, light) in scene.spot_lights.iter().enumerate() {
+        for (i, light) in scene.spot_lights.values().enumerate() {
             spot_lights[i] = *light;
         }
         let global_uniforms = GlobalUniforms {

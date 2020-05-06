@@ -78,16 +78,14 @@ fn main() {
     let mut scene = Scene::new(camera);
     let mut renderer = Renderer::new(&sc_desc, device, queue);
 
-    let mut player_light = SpotLightData::zero();
-    player_light.pos = [0.0, 0.0, 0.0];
-    player_light.color = [1.0, 0.8, 0.5];
-    player_light.dir = [0.0, 0.0, 1.0];
-    player_light.angle = 0.9;
-    player_light.range = 20.0;
-    player_light.smoothness = 0.5;
-    player_light.intensity = 5.0;
-    let player_light_id = scene.spot_lights.len();
-    scene.spot_lights.push(player_light);
+    let player_light_id = scene.add_spot_light();
+    scene.spot_lights[player_light_id].pos = [0.0, 0.0, 0.0];
+    scene.spot_lights[player_light_id].color = [1.0, 0.8, 0.5];
+    scene.spot_lights[player_light_id].dir = [0.0, 0.0, 1.0];
+    scene.spot_lights[player_light_id].angle = 0.9;
+    scene.spot_lights[player_light_id].range = 20.0;
+    scene.spot_lights[player_light_id].smoothness = 0.5;
+    scene.spot_lights[player_light_id].intensity = 5.0;
 
     let scene_desc = SceneDescription::load("assets/scene.toml");
     scene_desc.build_scene(&mut renderer, &mut scene);
@@ -374,7 +372,7 @@ impl SceneDescription {
     pub fn build_scene(&self, renderer: &mut Renderer, scene: &mut Scene) {
         if let Some(ref point_lights) = self.point_light {
             for point_light in point_lights {
-                scene.point_lights.push(PointLightData::new(
+                scene.point_lights.insert(PointLightData::new(
                     [point_light.x, point_light.y, point_light.z],
                     point_light.intensity,
                     [point_light.red, point_light.green, point_light.blue],
@@ -392,7 +390,7 @@ impl SceneDescription {
                 l.range = spot_light.range;
                 l.smoothness = spot_light.smoothness;
                 l.intensity = spot_light.intensity;
-                scene.spot_lights.push(l);
+                scene.spot_lights.insert(l);
             }
         }
 

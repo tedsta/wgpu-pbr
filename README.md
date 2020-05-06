@@ -11,7 +11,7 @@ git clone https://github.com/tedsta/wgpu-pbr
 cd wgpu-pbr
 wget https://www.dropbox.com/s/5rl9ji77s3qnhdk/assets.zip
 unzip assets.zip
-cargo run --release --example scene_viewer
+cargo run --release --example basic
 ```
 
 ## Screenshots

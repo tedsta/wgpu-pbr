@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec2 v_TexCoord;
 layout(location = 0) out vec4 o_Target;
+layout(location = 1) out vec4 bright_color;
 
 layout(set = 2, binding = 0) uniform MeshPart {
     layout(offset = 0) vec4 in_diffuse;

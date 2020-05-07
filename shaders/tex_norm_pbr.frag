@@ -49,6 +49,7 @@ layout(set = 2, binding = 4) uniform texture2D metallic_roughness_map;
 layout(set = 2, binding = 5) uniform texture2D ao_map;
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 bright_color;
 
 const float PI = 3.14159265359;
 

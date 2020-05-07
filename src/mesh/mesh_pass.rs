@@ -87,6 +87,7 @@ pub struct MeshPass {
     pub textured_emissive: MeshPipeline,
 
     pub depth_texture: wgpu::TextureView,
+    pub bloom_texture: wgpu::TextureView,
 }
 
 impl MeshPass {
@@ -170,6 +171,21 @@ impl MeshPass {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 
+        let bloom_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width: sc_desc.width,
+                height: sc_desc.height,
+                depth: 1,
+            },
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        });
+
         // Done
         let init_command_buf = init_encoder.finish();
         queue.submit(&[init_command_buf]);
@@ -203,6 +219,7 @@ impl MeshPass {
             textured_emissive,
 
             depth_texture: depth_texture.create_default_view(),
+            bloom_texture: bloom_texture.create_default_view(),
         }
     }
 
@@ -212,6 +229,21 @@ impl MeshPass {
         device: &mut wgpu::Device,
     ) {
         self.depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width: sc_desc.width,
+                height: sc_desc.height,
+                depth: 1,
+            },
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        }).create_default_view();
+
+        self.bloom_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
                 width: sc_desc.width,
@@ -281,18 +313,32 @@ impl MeshPass {
 
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &render_target,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
+                color_attachments: &[
+                    wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: &render_target,
+                        resolve_target: None,
+                        load_op: wgpu::LoadOp::Clear,
+                        store_op: wgpu::StoreOp::Store,
+                        clear_color: wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        },
                     },
-                }],
+                    /*wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: &self.bloom_texture,
+                        resolve_target: None,
+                        load_op: wgpu::LoadOp::Clear,
+                        store_op: wgpu::StoreOp::Store,
+                        clear_color: wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        },
+                    },*/
+                ],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture,
                     depth_load_op: wgpu::LoadOp::Clear,

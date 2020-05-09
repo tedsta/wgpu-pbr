@@ -163,7 +163,6 @@ impl MeshPass {
                 height: sc_desc.height,
                 depth: 1,
             },
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -178,7 +177,6 @@ impl MeshPass {
                 height: sc_desc.height,
                 depth: 1,
             },
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -187,8 +185,7 @@ impl MeshPass {
         });
 
         // Done
-        let init_command_buf = init_encoder.finish();
-        queue.submit(&[init_command_buf]);
+        queue.submit(Some(init_encoder.finish()));
 
         let untextured = MeshPipeline::untextured(
             sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
@@ -235,7 +232,6 @@ impl MeshPass {
                 height: sc_desc.height,
                 depth: 1,
             },
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -250,7 +246,6 @@ impl MeshPass {
                 height: sc_desc.height,
                 depth: 1,
             },
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,

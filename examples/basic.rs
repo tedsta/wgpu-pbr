@@ -1,9 +1,10 @@
 use std::f32::consts::PI;
 
+use cgmath::{Transform, SquareMatrix};
 use wgpu_pbr::{Camera, Renderer, Scene};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
-    event::{self, WindowEvent},
+    event::{self, WindowEvent, MouseScrollDelta},
 };
 
 fn main() {
@@ -11,35 +12,61 @@ fn main() {
 
     let title = "wgpu-pbr basic example";
 
-    let (window, initial_screen_size, surface) = {
-        let window = winit::window::Window::new(&event_loop).unwrap();
-        window.set_title(title);
-        let size = window.inner_size();
-        let surface = wgpu::Surface::create(&window);
-        (window, size, surface)
-    };
-    window.set_maximized(true);
+    let window = winit::window::Window::new(&event_loop).unwrap();
+    window.set_title(title);
 
-    let adapter = futures::executor::block_on(
-        wgpu::Adapter::request(
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        futures::executor::block_on(run_async(event_loop, window));
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+        console_log::init().expect("could not initialize logger");
+        use winit::platform::web::WindowExtWebSys;
+        // On wasm, append the canvas to the document body
+        web_sys::window()
+            .and_then(|win| win.document())
+            .and_then(|doc| doc.body())
+            .and_then(|body| {
+                body.append_child(&web_sys::Element::from(window.canvas()))
+                    .ok()
+            })
+            .expect("couldn't append canvas to document body");
+        wasm_bindgen_futures::spawn_local(run_async(event_loop, window));
+    }
+}
+
+
+async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
+    let instance = wgpu::Instance::new();
+
+    let initial_screen_size = window.inner_size();
+    let surface = unsafe { instance.create_surface(&window) };
+    //let surface = wgpu::Surface::create(&window);
+
+    let adapter = 
+        instance.request_adapter(
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::Default,
                 compatible_surface: Some(&surface),
             },
             wgpu::BackendBit::PRIMARY,
-        )
-    ).unwrap();
+        ).await.unwrap();
 
-    let (device, queue) = futures::executor::block_on(
-        adapter.request_device(&wgpu::DeviceDescriptor {
-            extensions: wgpu::Extensions { anisotropic_filtering: false },
-            limits: wgpu::Limits::default(),
-        })
-    );
+    let (device, queue) =
+        adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                extensions: wgpu::Extensions { anisotropic_filtering: false },
+                limits: wgpu::Limits::default(),
+            },
+            None,
+        ).await.unwrap();
 
     let mut sc_desc = wgpu::SwapChainDescriptor {
         usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8UnormSrgb,
+        //format: wgpu::TextureFormat::Bgra8UnormSrgb,
+        format: wgpu::TextureFormat::Bgra8Unorm,
         width: initial_screen_size.width,
         height: initial_screen_size.height,
         present_mode: wgpu::PresentMode::Fifo,
@@ -52,9 +79,21 @@ fn main() {
     let mut scene = Scene::new(camera);
     let mut renderer = Renderer::new(&sc_desc, device, queue);
 
-    let mesh_id = scene.add_mesh(renderer.mesh_from_file(
-        "assets/models/SciFiHelmet/SciFiHelmet.gltf", true,
-    ));
+    #[cfg(not(target_arch = "wasm32"))]
+    let mesh_id = {
+        scene.add_mesh(renderer.mesh_from_file(
+            "assets/models/SciFiHelmet.glb", true,
+        ))
+    };
+    #[cfg(target_arch = "wasm32")]
+    let mesh_id = {
+        let scifi_helmet_bytes = include_bytes!("../assets/models/SciFiHelmet.glb");
+        let mesh_parts = renderer.gltf_mesh_parts_from_reader(
+            "assets/models/SciFiHelmet.glb",
+            std::io::Cursor::new(scifi_helmet_bytes.as_ref()),
+        );
+        scene.add_mesh(renderer.mesh_from_parts(&mesh_parts, true))
+    };
     // Unnecessary but perhaps educational?
     scene.meshes[mesh_id].position = cgmath::Point3::new(0.0, 0.0, 0.0);
     scene.meshes[mesh_id].scale = cgmath::Vector3::new(1.0, 1.0, 1.0);
@@ -62,24 +101,33 @@ fn main() {
     // We'll position these lights down in the render loop
     let light0 = scene.add_point_light();
     scene.point_lights[light0].color = [1.0, 0.3, 0.3];
-    scene.point_lights[light0].intensity = 100.0;
+    scene.point_lights[light0].intensity = 800.0;
 
     let light1 = scene.add_point_light();
     scene.point_lights[light1].color = [0.3, 1.0, 0.3];
-    scene.point_lights[light1].intensity = 100.0;
+    scene.point_lights[light1].intensity = 800.0;
 
     let light2 = scene.add_point_light();
     scene.point_lights[light2].color = [0.3, 0.3, 1.0];
-    scene.point_lights[light2].intensity = 100.0;
+    scene.point_lights[light2].intensity = 800.0;
 
-    scene.camera.look_at(
-        cgmath::Point3::new(2.0, 2.0, 5.0), // Position
-        cgmath::Point3::new(0.0, 0.0, 0.0), // Target
-        cgmath::Vector3::new(0.0, 1.0, 0.0), // Up
-    );
+    let winit::dpi::PhysicalSize { width: win_w, height: win_h } = window.inner_size();
+    let win_center_x = win_w / 2;
+    let win_center_y = win_h / 2;
+    window.set_cursor_position(winit::dpi::LogicalPosition::new(
+        win_center_x, win_center_y,
+    )).expect("set cursor position");
+    window.set_maximized(true);
 
-    println!("Entering render loop...");
-    let start_time = std::time::Instant::now();
+    let mut player_rot_x: f32 = 0.0;
+    let mut player_rot_y: f32 = 0.0;
+    let mut player_rot = cgmath::Matrix4::identity();
+    let mut camera_distance: f32 = 15.0;
+    let mut prev_mouse_x: f64 = 0.0;
+    let mut prev_mouse_y: f64 = 0.0;
+
+    let mut timer = timer::Timer::new();
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = if cfg!(feature = "metal-auto-capture") {
             ControlFlow::Exit
@@ -89,7 +137,6 @@ fn main() {
         match event {
             event::Event::MainEventsCleared => window.request_redraw(),
             event::Event::WindowEvent { event: WindowEvent::Resized(size), .. } => {
-                println!("Resizing window to {:?}", size);
                 sc_desc.width = size.width;
                 sc_desc.height = size.height;
                 swap_chain = renderer.device.create_swap_chain(&surface, &sc_desc);
@@ -110,11 +157,30 @@ fn main() {
                 | WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
+
+                WindowEvent::CursorMoved { position, .. } => {
+                    let delta_x = position.x - prev_mouse_x;
+                    let delta_y = position.y - prev_mouse_y;
+                    prev_mouse_x = position.x;
+                    prev_mouse_y = position.y;
+
+                    player_rot_x += (-delta_y as f32) * 0.5;
+                    player_rot_y += (-delta_x as f32) * 0.5;
+
+                    player_rot =
+                        cgmath::Matrix4::from_angle_y(cgmath::Deg(player_rot_y)) *
+                        cgmath::Matrix4::from_angle_x(cgmath::Deg(player_rot_x));
+                }
+
+                WindowEvent::MouseWheel { delta: MouseScrollDelta::LineDelta(_, y), .. } => {
+                    camera_distance -= y * 0.5;
+                }
+
                 _ => { }
             }
             event::Event::RedrawRequested(_) => {
-                let elapsed = start_time.elapsed();
-                let elapsed_seconds = (elapsed.as_micros() as f32) / 1000000.0;
+                let elapsed = timer.get_elapsed_micros();
+                let elapsed_seconds = elapsed as f32 / 1_000_000.0;
 
                 // Orbit them lights
                 scene.point_lights[light0].pos = [
@@ -133,18 +199,96 @@ fn main() {
                     10.0 * f32::sin(elapsed_seconds + 2.0 / 3.0 * 2.0 * PI),
                 ];
 
+                // Update camera
+                let cam_offset = player_rot.transform_point(
+                    cgmath::Point3::new(0.0, 0.0, -camera_distance)
+                );
+                scene.camera.look_at(
+                    cam_offset,
+                    cgmath::Point3::new(0.0, 0.0, 0.0),
+                    cgmath::Vector3::new(0.0, 1.0, 0.0),
+                );
+
+                // Render scene
                 let frame = swap_chain.get_next_texture().expect("output frame");
                 let mut encoder =
                     renderer.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                         label: None,
                     });
-
                 renderer.render(&frame.view, &mut encoder, &scene);
-
-                renderer.queue.submit(&[encoder.finish()]);
+                renderer.queue.submit(Some(encoder.finish()));
             }
             _ => (),
         }
     });
+}
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+mod timer {
+    use std::time::Instant;
+
+    pub struct Timer {
+        last: Instant,
+    }
+
+    impl Timer {
+        pub fn new() -> Timer {
+            let now = Instant::now();
+            Timer {
+                last: now,
+            }
+        }
+
+        pub fn get_elapsed_micros(&mut self) -> u64 {
+            let now = Instant::now();
+            let duration = now.duration_since(self.last);
+            let interval = duration.as_micros() as u64;
+
+            interval
+        }
+
+        pub fn clear(&mut self) {
+            let now = Instant::now();
+            self.last = now;
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod timer {
+    pub struct Timer {
+        last: u64,
+    }
+
+    impl Timer {
+        pub fn new() -> Timer {
+            let now = web_sys::window().expect("should have a window in this context")
+                .performance()
+                .expect("performance should be available")
+                .now() as u64;
+            Timer {
+                last: now,
+            }
+        }
+
+        pub fn get_elapsed_micros(&mut self) -> u64 {
+            let now = web_sys::window().expect("should have a window in this context")
+                .performance()
+                .expect("performance should be available")
+                .now() as u64;
+
+            let interval = now - self.last;
+
+            interval * 1000 // Millis to micros
+        }
+
+        pub fn clear(&mut self) {
+            let now = web_sys::window().expect("should have a window in this context")
+                .performance()
+                .expect("performance should be available")
+                .now() as u64;
+            self.last = now;
+        }
+    }
 }
 

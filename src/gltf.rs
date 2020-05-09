@@ -10,7 +10,8 @@ use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialFactors};
 /// doesn't exist, `None` is returned. On success, a tuple of the mesh parts and the node's
 /// transorm are returned.
 pub fn load_gltf_single_mesh(
-    resources: &mut ResourceLoader, path: impl AsRef<Path>,
+    resources: &mut ResourceLoader,
+    path: impl AsRef<Path>,
     mesh_name: &str,
 ) -> Result<Option<(Vec<MeshPartData>, gltf::scene::Transform)>, GltfLoadError> {
     let base_path = path.as_ref().parent().expect("gltf base path");
@@ -41,12 +42,42 @@ pub fn load_gltf_single_mesh(
 }
 
 pub fn load_gltf(
-    resources: &mut ResourceLoader, path: impl AsRef<Path>,
+    resources: &mut ResourceLoader,
+    path: impl AsRef<Path>,
 ) -> Result<Vec<MeshPartData>, GltfLoadError> {
     let base_path = path.as_ref().parent().expect("gltf base path");
 
     let file = std::fs::File::open(&path)?;
     let gltf = gltf::Gltf::from_reader(&file)?;
+
+    let gltf_buffers = GltfBuffers::load_from_gltf(base_path, &gltf)?;
+
+    let mut mesh_parts: Vec<MeshPartData> = Vec::new();
+
+    for node in gltf.nodes() {
+        if let Some(ref mesh) = node.mesh() {
+            mesh_parts.extend(load_gltf_mesh(
+                resources,
+                &gltf,
+                &gltf_buffers,
+                &mesh,
+                &path,
+                base_path,
+            )?);
+        }
+    }
+
+    Ok(mesh_parts)
+}
+
+pub fn load_gltf_from_reader(
+    resources: &mut ResourceLoader,
+    path: impl AsRef<Path>,
+    r: impl std::io::Read + std::io::Seek,
+) -> Result<Vec<MeshPartData>, GltfLoadError> {
+    let base_path = path.as_ref().parent().expect("gltf base path");
+
+    let gltf = gltf::Gltf::from_reader(r)?;
 
     let gltf_buffers = GltfBuffers::load_from_gltf(base_path, &gltf)?;
 

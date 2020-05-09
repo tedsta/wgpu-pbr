@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::resources::{Resources, ResourceLoader};
 use super::mesh::{Mesh, MeshPass, MeshPartData};
 use super::obj::load_obj;
-use super::gltf::{load_gltf, load_gltf_single_mesh, GltfLoadError};
+use super::gltf::{load_gltf, load_gltf_from_reader, load_gltf_single_mesh, GltfLoadError};
 use super::scene::Scene;
 
 pub struct Renderer {
@@ -73,7 +73,28 @@ impl Renderer {
                 panic!("Failed to load mesh '{}' - unknown file type.", path.as_ref().display());
             };
 
-        self.queue.submit(&[encoder.finish()]);
+        self.queue.submit(Some(encoder.finish()));
+        
+        mesh_parts
+    }
+
+    pub fn gltf_mesh_parts_from_reader(
+        &mut self,
+        path: impl AsRef<Path>,
+        reader: impl std::io::Read + std::io::Seek,
+    ) -> Vec<MeshPartData> {
+        let mut encoder = self.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::mesh_parts_from_file") }
+        );
+
+        let mut resource_loader = ResourceLoader::new(
+            &mut self.device, &mut encoder, &mut self.resources,
+        );
+
+        let mesh_parts =
+            load_gltf_from_reader(&mut resource_loader, path, reader).expect("load gltf");
+
+        self.queue.submit(Some(encoder.finish()));
         
         mesh_parts
     }
@@ -91,7 +112,7 @@ impl Renderer {
 
         let maybe_mesh_parts = load_gltf_single_mesh(&mut resource_loader, path, mesh_name)?;
 
-        self.queue.submit(&[encoder.finish()]);
+        self.queue.submit(Some(encoder.finish()));
 
         Ok(maybe_mesh_parts)
     }

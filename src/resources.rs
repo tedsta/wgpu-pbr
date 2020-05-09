@@ -112,7 +112,6 @@ impl Resources {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: texture_extent,
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -123,12 +122,12 @@ impl Resources {
             },
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
-        let temp_buf = device.create_buffer_mapped(&wgpu::BufferDescriptor {
+        let mut temp_buf = device.create_buffer_mapped(&wgpu::BufferDescriptor {
             label: Some("Resources::texture_to_gpu::temp_buf"),
             size: texels.len() as u64,
             usage: wgpu::BufferUsage::COPY_SRC,
         });
-        temp_buf.data.copy_from_slice(&texels);
+        temp_buf.data().copy_from_slice(&texels);
 
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {

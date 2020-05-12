@@ -249,7 +249,7 @@ impl MeshPass {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: DEPTH_FORMAT,
+            format: sc_desc.format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         }).create_default_view();
     }
@@ -321,7 +321,7 @@ impl MeshPass {
                             a: 1.0,
                         },
                     },
-                    /*wgpu::RenderPassColorAttachmentDescriptor {
+                    wgpu::RenderPassColorAttachmentDescriptor {
                         attachment: &self.bloom_texture,
                         resolve_target: None,
                         load_op: wgpu::LoadOp::Clear,
@@ -332,7 +332,7 @@ impl MeshPass {
                             b: 0.0,
                             a: 1.0,
                         },
-                    },*/
+                    },
                 ],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture,

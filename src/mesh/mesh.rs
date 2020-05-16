@@ -21,7 +21,6 @@ impl Mesh {
     pub fn from_parts(
         device: &mut wgpu::Device,
         mesh_pass: &MeshPass,
-        lighting: bool,
         mesh_parts: &[MeshPartData],
     ) -> Mesh {
         let transform = cgmath::Matrix4::identity();
@@ -47,68 +46,11 @@ impl Mesh {
         });
 
         let mut parts = Vec::new();
-        if lighting {
-            for part_data in mesh_parts {
-                if let Some(ref texture) = part_data.texture {
-                    if let Some(ref emissive) = part_data.emissive {
-                        let normal = part_data.normal.as_ref().expect("textured model without normal map");
-                        let metallic_roughness = part_data.metallic_roughness.as_ref().expect("textured model without metallic roughness map");
-                        let ao = part_data.ao.as_ref().expect("textured model without ao map");
-                        parts.push(MeshPart::textured_emissive(
-                            device, mesh_pass,
-                            &part_data.geometry,
-                            part_data.material_factors.into(),
-                            &texture,
-                            normal,
-                            metallic_roughness,
-                            ao,
-                            &emissive
-                        ));
-                    } else if let Some(ref normal) = part_data.normal {
-                        let metallic_roughness = part_data.metallic_roughness.as_ref().expect("textured model without metallic roughness map");
-                        let ao = part_data.ao.as_ref().expect("textured model without ao map");
-                        parts.push(MeshPart::textured_norm(
-                            device, mesh_pass,
-                            &part_data.geometry,
-                            part_data.material_factors.into(),
-                            &texture,
-                            &normal,
-                            metallic_roughness,
-                            ao,
-                        ));
-                    } else {
-                        parts.push(MeshPart::textured(
-                            device, mesh_pass,
-                            &part_data.geometry,
-                            part_data.material_factors.into(),
-                            &texture,
-                        ));
-                    }
-                } else {
-                    parts.push(MeshPart::untextured(
-                        device, mesh_pass,
-                        &part_data.geometry,
-                        part_data.material_factors.into(),
-                    ));
-                }
-            }
-        } else {
-            for part_data in mesh_parts {
-                if let Some(ref texture) = part_data.texture {
-                    parts.push(MeshPart::textured_unlit(
-                        device, mesh_pass,
-                        &part_data.geometry,
-                        part_data.material_factors.into(),
-                        &texture,
-                    ));
-                } else {
-                    parts.push(MeshPart::untextured(
-                        device, mesh_pass,
-                        &part_data.geometry,
-                        part_data.material_factors.into(),
-                    ));
-                }
-            }
+        for part_data in mesh_parts {
+            parts.push(MeshPart::new(
+                device, mesh_pass,
+                &part_data,
+            ));
         }
 
         Mesh {

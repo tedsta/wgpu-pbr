@@ -39,15 +39,17 @@ impl Renderer {
     }
 
     pub fn mesh_from_file(&mut self, path: impl AsRef<std::path::Path>, lighting: bool) -> Mesh {
-        let mesh_parts = self.mesh_parts_from_file(path);
-        self.mesh_from_parts(&mesh_parts, lighting)
+        let mut mesh_parts = self.mesh_parts_from_file(path);
+        for part in &mut mesh_parts {
+            part.material.lighting = lighting;
+        }
+        self.mesh_from_parts(&mesh_parts)
     }
 
-    pub fn mesh_from_parts(&mut self, parts: &[MeshPartData], lighting: bool) -> Mesh {
+    pub fn mesh_from_parts(&mut self, parts: &[MeshPartData]) -> Mesh {
         Mesh::from_parts(
             &mut self.device,
             &self.mesh_pass,
-            lighting,
             parts,
         )
     }

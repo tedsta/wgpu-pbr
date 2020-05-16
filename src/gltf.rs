@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use crate::resources::ResourceLoader;
 use super::compute_tangents::compute_tangents;
-use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialFactors};
+use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialData, MaterialFactors};
 
 /// Load a single mesh by its node's name from a glTF file. If a mesh with the specified name
 /// doesn't exist, `None` is returned. On success, a tuple of the mesh parts and the node's
@@ -287,18 +287,21 @@ pub fn load_gltf_mesh(
 
         mesh_parts.push(MeshPartData {
             geometry,
-            material_factors: MaterialFactors {
-		diffuse: pbr_met_rough.base_color_factor(),
-		metal: pbr_met_rough.metallic_factor(),
-		rough: pbr_met_rough.roughness_factor(),
-		emissive: material.emissive_factor(),
-                extra_emissive: [0.0, 0.0, 0.0],
+            material: MaterialData {
+                factors: MaterialFactors {
+                    diffuse: pbr_met_rough.base_color_factor(),
+                    metal: pbr_met_rough.metallic_factor(),
+                    rough: pbr_met_rough.roughness_factor(),
+                    emissive: material.emissive_factor(),
+                    extra_emissive: [0.0, 0.0, 0.0],
+                },
+                lighting: true,
+                texture: albedo,
+                normal: normal,
+                metallic_roughness: metallic_roughness,
+                ao: ao,
+                emissive: emissive,
             },
-            texture: albedo,
-            normal: normal,
-            metallic_roughness: metallic_roughness,
-            ao: ao,
-            emissive: emissive,
         })
     }
 

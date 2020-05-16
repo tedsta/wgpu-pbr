@@ -2,24 +2,24 @@ use crate::{PointLight, SpotLight};
 use super::{
     super::Scene,
     consts::DEPTH_FORMAT,
-    mesh_part::MeshPartKind,
+    material::MaterialKind,
     mesh_pipeline::MeshPipeline,
 };
 
 pub struct MeshPass {
-    pub global_bind_group_layout: wgpu::BindGroupLayout,
-    pub mesh_bind_group_layout: wgpu::BindGroupLayout,
-    pub global_bind_group: wgpu::BindGroup,
-    pub global_buf: wgpu::Buffer,
+    pub(crate) global_bind_group_layout: wgpu::BindGroupLayout,
+    pub(crate) mesh_bind_group_layout: wgpu::BindGroupLayout,
+    pub(crate) global_bind_group: wgpu::BindGroup,
 
-    pub untextured: MeshPipeline,
-    pub textured_unlit: MeshPipeline,
-    pub textured: MeshPipeline,
-    pub textured_norm: MeshPipeline,
-    pub textured_emissive: MeshPipeline,
+    pub(crate) untextured: MeshPipeline,
+    pub(crate) textured_unlit: MeshPipeline,
+    pub(crate) textured: MeshPipeline,
+    pub(crate) textured_norm: MeshPipeline,
+    pub(crate) textured_emissive: MeshPipeline,
 
-    pub depth_texture: wgpu::TextureView,
-    pub bloom_texture: wgpu::TextureView,
+    global_buf: wgpu::Buffer,
+    pub(crate) depth_texture: wgpu::TextureView,
+    pub(crate) bloom_texture: wgpu::TextureView,
 }
 
 impl MeshPass {
@@ -289,24 +289,24 @@ impl MeshPass {
             for mesh in scene.meshes.values() {
                 rpass.set_bind_group(1, &mesh.bind_group(), &[]);
                 for part in &mesh.parts {
-                    match part.kind() {
-                        MeshPartKind::Untextured => {
+                    match part.material.kind() {
+                        MaterialKind::Untextured => {
                             rpass.set_pipeline(&self.untextured.pipeline);
                         }
-                        MeshPartKind::TexturedUnlit => {
+                        MaterialKind::TexturedUnlit => {
                             rpass.set_pipeline(&self.textured_unlit.pipeline);
                         }
-                        MeshPartKind::Textured => {
+                        MaterialKind::Textured => {
                             rpass.set_pipeline(&self.textured.pipeline);
                         }
-                        MeshPartKind::TexturedNorm => {
+                        MaterialKind::TexturedNorm => {
                             rpass.set_pipeline(&self.textured_norm.pipeline);
                         }
-                        MeshPartKind::TexturedEmissive => {
+                        MaterialKind::TexturedEmissive => {
                             rpass.set_pipeline(&self.textured_emissive.pipeline);
                         }
                     }
-                    rpass.set_bind_group(2, &part.bind_group(), &[]);
+                    rpass.set_bind_group(2, &part.material.bind_group(), &[]);
                     rpass.set_index_buffer(&part.index_buf(), 0, 0);
                     rpass.set_vertex_buffer(0, &part.vertex_buf(), 0, 0);
                     rpass.draw_indexed(0 .. part.index_count() as u32, 0, 0 .. 1);

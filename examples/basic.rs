@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use cgmath::{Transform, SquareMatrix};
-use wgpu_pbr::{Camera, Renderer, Scene};
+use wgpu_pbr::{Camera, Renderer, Scene, PointLight};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
     event::{self, WindowEvent, MouseScrollDelta},
@@ -43,7 +43,6 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
 
     let initial_screen_size = window.inner_size();
     let surface = unsafe { instance.create_surface(&window) };
-    //let surface = wgpu::Surface::create(&window);
 
     let adapter = 
         instance.request_adapter(
@@ -95,21 +94,27 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
         scene.add_mesh(renderer.mesh_from_parts(&mesh_parts, true))
     };
     // Unnecessary but perhaps educational?
-    scene.meshes[mesh_id].position = cgmath::Point3::new(0.0, 0.0, 0.0);
-    scene.meshes[mesh_id].scale = cgmath::Vector3::new(1.0, 1.0, 1.0);
+    scene.mesh(mesh_id).position = cgmath::Point3::new(0.0, 0.0, 0.0);
+    scene.mesh(mesh_id).scale = cgmath::Vector3::new(1.0, 1.0, 1.0);
 
     // We'll position these lights down in the render loop
-    let light0 = scene.add_point_light();
-    scene.point_lights[light0].color = [1.0, 0.3, 0.3];
-    scene.point_lights[light0].intensity = 800.0;
+    let light0 = scene.add_point_light(PointLight {
+        pos: [0.0; 3],
+        color: [1.0, 0.3, 0.3],
+        intensity: 800.0,
+    });
 
-    let light1 = scene.add_point_light();
-    scene.point_lights[light1].color = [0.3, 1.0, 0.3];
-    scene.point_lights[light1].intensity = 800.0;
+    let light1 = scene.add_point_light(PointLight {
+        pos: [0.0; 3],
+        color: [0.3, 1.0, 0.3],
+        intensity: 800.0,
+    });
 
-    let light2 = scene.add_point_light();
-    scene.point_lights[light2].color = [0.3, 0.3, 1.0];
-    scene.point_lights[light2].intensity = 800.0;
+    let light2 = scene.add_point_light(PointLight {
+        pos: [0.0; 3],
+        color: [0.3, 0.3, 1.0],
+        intensity: 800.0,
+    });
 
     let winit::dpi::PhysicalSize { width: win_w, height: win_h } = window.inner_size();
     let win_center_x = win_w / 2;
@@ -183,17 +188,17 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 let elapsed_seconds = elapsed as f32 / 1_000_000.0;
 
                 // Orbit them lights
-                scene.point_lights[light0].pos = [
+                scene.point_light(light0).pos = [
                     10.0 * f32::cos(elapsed_seconds + 0.0 / 3.0 * 2.0 * PI),
                     10.0,
                     10.0 * f32::sin(elapsed_seconds + 0.0 / 3.0 * 2.0 * PI),
                 ];
-                scene.point_lights[light1].pos = [
+                scene.point_light(light1).pos = [
                     10.0 * f32::cos(elapsed_seconds + 1.0 / 3.0 * 2.0 * PI),
                     10.0,
                     10.0 * f32::sin(elapsed_seconds + 1.0 / 3.0 * 2.0 * PI),
                 ];
-                scene.point_lights[light2].pos = [
+                scene.point_light(light2).pos = [
                     10.0 * f32::cos(elapsed_seconds + 2.0 / 3.0 * 2.0 * PI),
                     10.0,
                     10.0 * f32::sin(elapsed_seconds + 2.0 / 3.0 * 2.0 * PI),

@@ -8,7 +8,8 @@ pub fn load_obj(
     resources: &mut ResourceLoader,
     path: impl AsRef<Path>,
 ) -> Vec<MeshPartData> {
-    let (models, materials) = tobj::load_obj(path.as_ref()).expect("load obj");
+    let triangulate = true;
+    let (models, materials) = tobj::load_obj(path.as_ref(), triangulate).expect("load obj");
 
     let mut parts = Vec::new();
     for model in models.iter() {

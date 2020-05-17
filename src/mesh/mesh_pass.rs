@@ -71,10 +71,7 @@ impl MeshPass {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &global_buf,
-                        range: 0 .. std::mem::size_of::<GlobalUniforms>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(global_buf.slice(..)),
                 },
             ],
         });
@@ -307,8 +304,8 @@ impl MeshPass {
                         }
                     }
                     rpass.set_bind_group(2, &part.material.bind_group(), &[]);
-                    rpass.set_index_buffer(&part.index_buf(), 0, 0);
-                    rpass.set_vertex_buffer(0, &part.vertex_buf(), 0, 0);
+                    rpass.set_index_buffer(part.index_buf().slice(..));
+                    rpass.set_vertex_buffer(0, part.vertex_buf().slice(..));
                     rpass.draw_indexed(0 .. part.index_count() as u32, 0, 0 .. 1);
                 }
             }

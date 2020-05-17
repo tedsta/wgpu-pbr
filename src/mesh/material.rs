@@ -152,10 +152,7 @@ impl Material {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &factors_buf,
-                        range: 0 .. std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -209,10 +206,7 @@ impl Material {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &factors_buf,
-                        range: 0 .. std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -272,10 +266,7 @@ impl Material {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &factors_buf,
-                        range: 0 .. std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -349,10 +340,7 @@ impl Material {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &factors_buf,
-                        range: 0 .. std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -406,10 +394,7 @@ impl Material {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &factors_buf,
-                        range: 0 .. std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
-                    },
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
                 },
             ],
         });

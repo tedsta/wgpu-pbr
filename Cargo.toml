@@ -32,6 +32,10 @@ serde_derive = "*"
 toml = "*"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+js-sys = "0.3.39"
+wasm-bindgen-futures = "0.4.12"
+console_error_panic_hook = "0.1.6"
+console_log = "0.1.2"
 web-sys = { version = "0.3.39", features = [
     "Document",
     "Navigator",
@@ -119,7 +123,3 @@ web-sys = { version = "0.3.39", features = [
     "HtmlCanvasElement",
     "Window",
 ]}
-js-sys = "0.3.39"
-wasm-bindgen-futures = "0.4.12"
-console_error_panic_hook = "0.1.6"
-console_log = "0.1.2"

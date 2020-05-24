@@ -7,14 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wgpu = "=0.5.0"
-tobj = "*"
+#wgpu = "=0.5.0"
+wgpu = { git="https://github.com/gfx-rs/wgpu-rs", rev="143861d361460208e903a81ec211eb4455cb98d8" }
+tobj = "2"
 image = "*"
 bytemuck = "1"
 futures = "0.3"
 
 cgmath = "0.17"
-#ultraviolet = "=0.4.5"
+ultraviolet = "=0.4.6"
 #wide = "=0.4.3"
 
 slotmap = "0.4.0"
@@ -24,8 +25,101 @@ mikktspace = "0.2.0"
 gltf = "*"
 
 [dev-dependencies]
-winit = "=0.22.1"
-wgpu_glyph = "=0.8.0"
+winit = { version = "0.22.1", features = ["web-sys"] }
+#wgpu_glyph = "=0.8.0"
 serde = "*"
 serde_derive = "*"
 toml = "*"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+js-sys = "0.3.39"
+wasm-bindgen-futures = "0.4.12"
+console_error_panic_hook = "0.1.6"
+console_log = "0.1.2"
+web-sys = { version = "0.3.39", features = [
+    "Document",
+    "Navigator",
+    "Node",
+    "NodeList",
+    "Gpu",
+    "GpuAdapter",
+    "GpuAddressMode",
+    "GpuBindGroup",
+    "GpuBindGroupEntry",
+    "GpuBindGroupDescriptor",
+    "GpuBindGroupLayout",
+    "GpuBindGroupLayoutEntry",
+    "GpuBindGroupLayoutDescriptor",
+    "GpuBlendDescriptor",
+    "GpuBlendFactor",
+    "GpuBlendOperation",
+    "GpuBindingType",
+    "GpuBuffer",
+    "GpuBufferBinding",
+    "GpuBufferCopyView",
+    "GpuBufferDescriptor",
+    "GpuCanvasContext",
+    "GpuColorDict",
+    "GpuColorStateDescriptor",
+    "GpuCommandBuffer",
+    "GpuCommandBufferDescriptor",
+    "GpuCommandEncoder",
+    "GpuCommandEncoderDescriptor",
+    "GpuCompareFunction",
+    "GpuComputePassDescriptor",
+    "GpuComputePassEncoder",
+    "GpuComputePipeline",
+    "GpuComputePipelineDescriptor",
+    "GpuCullMode",
+    "GpuDepthStencilStateDescriptor",
+    "GpuDevice",
+    "GpuDeviceDescriptor",
+    "GpuExtent3dDict",
+    "GpuFilterMode",
+    "GpuFrontFace",
+    "GpuIndexFormat",
+    "GpuInputStepMode",
+    "GpuLimits",
+    "GpuLoadOp",
+    "GpuOrigin3dDict",
+    "GpuPipelineLayout",
+    "GpuPipelineLayoutDescriptor",
+    "GpuPowerPreference",
+    "GpuPrimitiveTopology",
+    "GpuProgrammableStageDescriptor",
+    "GpuQueue",
+    "GpuRasterizationStateDescriptor",
+    "GpuRenderPassColorAttachmentDescriptor",
+    "GpuRenderPassDepthStencilAttachmentDescriptor",
+    "GpuRenderPassDescriptor",
+    "GpuRenderPassEncoder",
+    "GpuRenderPipeline",
+    "GpuRenderPipelineDescriptor",
+    "GpuRequestAdapterOptions",
+    "GpuSampler",
+    "GpuSamplerDescriptor",
+    "GpuShaderModule",
+    "GpuShaderModuleDescriptor",
+    "GpuStencilOperation",
+    "GpuStencilStateFaceDescriptor",
+    "GpuStoreOp",
+    "GpuSwapChain",
+    "GpuSwapChainDescriptor",
+    "GpuTexture",
+    "GpuTextureAspect",
+    "GpuTextureComponentType",
+    "GpuTextureCopyView",
+    "GpuTextureDescriptor",
+    "GpuTextureDimension",
+    "GpuTextureFormat",
+    "GpuTextureViewDescriptor",
+    "GpuTextureViewDimension",
+    "GpuTextureView",
+    "GpuVertexAttributeDescriptor",
+    "GpuVertexBufferLayoutDescriptor",
+    "GpuVertexFormat",
+    "GpuVertexStateDescriptor",
+    "GpuVertexAttributeDescriptor",
+    "HtmlCanvasElement",
+    "Window",
+]}

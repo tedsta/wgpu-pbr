@@ -2,13 +2,14 @@ use std::path::Path;
 
 use super::resources::ResourceLoader;
 use super::compute_tangents::compute_tangents;
-use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialFactors};
+use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialData, MaterialFactors};
 
 pub fn load_obj(
     resources: &mut ResourceLoader,
     path: impl AsRef<Path>,
 ) -> Vec<MeshPartData> {
-    let (models, materials) = tobj::load_obj(path.as_ref()).expect("load obj");
+    let triangulate = true;
+    let (models, materials) = tobj::load_obj(path.as_ref(), triangulate).expect("load obj");
 
     let mut parts = Vec::new();
     for model in models.iter() {
@@ -88,18 +89,21 @@ pub fn load_obj(
 
         parts.push(MeshPartData {
             geometry,
-            material_factors: MaterialFactors {
-                diffuse: diffuse,
-                metal: 1.0,
-                rough: 1.0,
-                emissive: [1.0, 1.0, 1.0],
-                extra_emissive: [0.0, 0.0, 0.0],
+            material: MaterialData {
+                factors: MaterialFactors {
+                    diffuse: diffuse,
+                    metal: 1.0,
+                    rough: 1.0,
+                    emissive: [1.0, 1.0, 1.0],
+                    extra_emissive: [0.0, 0.0, 0.0],
+                },
+                lighting: true,
+                texture: texture_path.map(|p| resources.load_texture(p, true)),
+                normal: normal_path.map(|p| resources.load_texture(p, false)),
+                metallic_roughness: metallic_roughness_path.map(|p| resources.load_texture(p, false)),
+                ao: ao_path.map(|p| resources.load_texture(p, false)),
+                emissive: emissive_path.map(|p| resources.load_texture(p, true)),
             },
-            texture: texture_path.map(|p| resources.load_texture(p, true)),
-            normal: normal_path.map(|p| resources.load_texture(p, false)),
-            metallic_roughness: metallic_roughness_path.map(|p| resources.load_texture(p, false)),
-            ao: ao_path.map(|p| resources.load_texture(p, false)),
-            emissive: emissive_path.map(|p| resources.load_texture(p, true)),
         });
     }
 

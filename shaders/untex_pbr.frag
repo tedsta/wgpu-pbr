@@ -48,6 +48,7 @@ layout(set = 2, binding = 0) uniform MeshPart {
 };
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 bright_color;
 
 const float PI = 3.14159265359;
 

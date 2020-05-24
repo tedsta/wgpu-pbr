@@ -91,7 +91,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
             "assets/models/SciFiHelmet.glb",
             std::io::Cursor::new(scifi_helmet_bytes.as_ref()),
         );
-        scene.add_mesh(renderer.mesh_from_parts(&mesh_parts, true))
+        scene.add_mesh(renderer.mesh_from_parts(&mesh_parts))
     };
     // Unnecessary but perhaps educational?
     scene.mesh(mesh_id).position = cgmath::Point3::new(0.0, 0.0, 0.0);

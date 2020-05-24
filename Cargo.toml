@@ -8,14 +8,14 @@ edition = "2018"
 
 [dependencies]
 #wgpu = "=0.5.0"
-wgpu = { git="https://github.com/gfx-rs/wgpu-rs", rev="c830faa0" }
-tobj = "*"
+wgpu = { git="https://github.com/gfx-rs/wgpu-rs", rev="143861d361460208e903a81ec211eb4455cb98d8" }
+tobj = "2"
 image = "*"
 bytemuck = "1"
 futures = "0.3"
 
 cgmath = "0.17"
-#ultraviolet = "=0.4.5"
+ultraviolet = "=0.4.6"
 #wide = "=0.4.3"
 
 slotmap = "0.4.0"

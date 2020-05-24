@@ -10,19 +10,17 @@ edition = "2018"
 #wgpu = "=0.5.0"
 wgpu = { git="https://github.com/gfx-rs/wgpu-rs", rev="143861d361460208e903a81ec211eb4455cb98d8" }
 tobj = "2"
-image = "*"
+image = "0.23.4"
 bytemuck = "1"
 futures = "0.3"
 
-cgmath = "0.17"
 ultraviolet = "=0.4.6"
-#wide = "=0.4.3"
 
 slotmap = "0.4.0"
 
 mikktspace = "0.2.0"
 
-gltf = "*"
+gltf = "0.15.2"
 
 [dev-dependencies]
 winit = { version = "0.22.1", features = ["web-sys"] }

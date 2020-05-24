@@ -1,4 +1,4 @@
-use cgmath::{self, SquareMatrix};
+use ultraviolet::{Mat4, Rotor3, Vec3};
 
 use super::{
     mesh_part::{MeshPart, MeshPartData},
@@ -6,9 +6,9 @@ use super::{
 };
 
 pub struct Mesh {
-    pub position: cgmath::Point3<f32>,
-    pub rotation: cgmath::Matrix4<f32>,
-    pub scale: cgmath::Vector3<f32>,
+    pub position: Vec3,
+    pub rotation: Rotor3,
+    pub scale: Vec3,
     pub parts: Vec<MeshPart>,
 
     bind_group: wgpu::BindGroup,
@@ -23,8 +23,8 @@ impl Mesh {
         mesh_pass: &MeshPass,
         mesh_parts: &[MeshPartData],
     ) -> Mesh {
-        let transform = cgmath::Matrix4::identity();
-        let transform_ref: &[f32; 16] = transform.as_ref();
+        let transform = Mat4::identity();
+        let transform_ref: &[f32; 16] = transform.as_array();
         let uniform_buf = device.create_buffer_with_data(
             bytemuck::cast_slice(transform_ref),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -51,9 +51,9 @@ impl Mesh {
         }
 
         Mesh {
-            position: cgmath::Point3::new(0.0, 0.0, 0.0),
-            rotation: cgmath::Matrix4::identity(),
-            scale: cgmath::Vector3::new(1.0, 1.0, 1.0),
+            position: Vec3::zero(),
+            rotation: Rotor3::identity(),
+            scale: Vec3::broadcast(1.0),
 
             parts,
             bind_group,
@@ -64,12 +64,10 @@ impl Mesh {
     pub fn bind_group(&self) -> &wgpu::BindGroup { &self.bind_group }
     pub fn uniform_buf(&self) -> &wgpu::Buffer { &self.uniform_buf }
 
-    pub fn transform(&self) -> cgmath::Matrix4<f32> {
-        cgmath::Matrix4::from_translation(cgmath::Vector3::new(
-            self.position.x, self.position.y, self.position.z,
-        )) *
-            cgmath::Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z) *
-            self.rotation
+    pub fn transform(&self) -> Mat4 {
+        Mat4::from_translation(self.position) *
+            Mat4::from_nonuniform_scale(self.scale.into()) *
+            self.rotation.into_matrix().into_homogeneous()
     }
 }
 

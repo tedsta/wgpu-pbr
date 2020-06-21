@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use cgmath::{Transform, SquareMatrix};
+use ultraviolet::{Rotor3, Vec3};
 use wgpu_pbr::{Camera, Renderer, Scene, PointLight};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
@@ -94,8 +94,8 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
         scene.add_mesh(renderer.mesh_from_parts(&mesh_parts))
     };
     // Unnecessary but perhaps educational?
-    scene.mesh(mesh_id).position = cgmath::Point3::new(0.0, 0.0, 0.0);
-    scene.mesh(mesh_id).scale = cgmath::Vector3::new(1.0, 1.0, 1.0);
+    scene.mesh(mesh_id).position = Vec3::zero();
+    scene.mesh(mesh_id).scale = Vec3::broadcast(1.0);
 
     // We'll position these lights down in the render loop
     let light0 = scene.add_point_light(PointLight {
@@ -126,7 +126,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
 
     let mut player_rot_x: f32 = 0.0;
     let mut player_rot_y: f32 = 0.0;
-    let mut player_rot = cgmath::Matrix4::identity();
+    let mut player_rot = Rotor3::identity();
     let mut camera_distance: f32 = 15.0;
     let mut prev_mouse_x: f64 = 0.0;
     let mut prev_mouse_y: f64 = 0.0;
@@ -169,12 +169,12 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                     prev_mouse_x = position.x;
                     prev_mouse_y = position.y;
 
-                    player_rot_x += (-delta_y as f32) * 0.5;
-                    player_rot_y += (-delta_x as f32) * 0.5;
+                    player_rot_x += (delta_y as f32) * 0.5;
+                    player_rot_y += (delta_x as f32) * 0.5;
 
                     player_rot =
-                        cgmath::Matrix4::from_angle_y(cgmath::Deg(player_rot_y)) *
-                        cgmath::Matrix4::from_angle_x(cgmath::Deg(player_rot_x));
+                        Rotor3::from_rotation_xz(f32::to_radians(player_rot_y)) *
+                        Rotor3::from_rotation_yz(f32::to_radians(player_rot_x));
                 }
 
                 WindowEvent::MouseWheel { delta: MouseScrollDelta::LineDelta(_, y), .. } => {
@@ -205,13 +205,12 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 ];
 
                 // Update camera
-                let cam_offset = player_rot.transform_point(
-                    cgmath::Point3::new(0.0, 0.0, -camera_distance)
-                );
+                let mut cam_offset = Vec3::new(0.0, 0.0, -camera_distance);
+                player_rot.rotate_vec(&mut cam_offset);
                 scene.camera.look_at(
                     cam_offset,
-                    cgmath::Point3::new(0.0, 0.0, 0.0),
-                    cgmath::Vector3::new(0.0, 1.0, 0.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                    Vec3::new(0.0, 1.0, 0.0),
                 );
 
                 // Render scene

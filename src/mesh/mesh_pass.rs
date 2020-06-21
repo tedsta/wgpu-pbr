@@ -211,7 +211,7 @@ impl MeshPass {
         // Upload global uniforms
         let view_proj = scene.camera.total_matrix();
         let global_uniforms = GlobalUniforms {
-            view_proj: *view_proj.as_ref(),
+            view_proj: *view_proj.as_array(),
             camera_pos: [
                 scene.camera.position().x,
                 scene.camera.position().y,
@@ -235,9 +235,8 @@ impl MeshPass {
         // Upload mesh transform matrices
         for mesh in scene.meshes.values() {
             let transform = mesh.transform();
-            let mx_ref: &[f32; 16] = transform.as_ref();
             let temp_buf = device.create_buffer_with_data(
-                bytemuck::cast_slice(mx_ref.as_ref()),
+                bytemuck::cast_slice(transform.as_slice()),
                 wgpu::BufferUsage::COPY_SRC,
             );
             encoder.copy_buffer_to_buffer(&temp_buf, 0, &mesh.uniform_buf(), 0, 64);

@@ -122,24 +122,22 @@ impl Resources {
             },
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
-        let mut temp_buf = device.create_buffer_mapped(&wgpu::BufferDescriptor {
-            label: Some("Resources::texture_to_gpu::temp_buf"),
-            size: texels.len() as u64,
-            usage: wgpu::BufferUsage::COPY_SRC,
-        });
-        temp_buf.data().copy_from_slice(&texels);
+        let temp_buf = device.create_buffer_with_data(
+            bytemuck::cast_slice(&texels), wgpu::BufferUsage::COPY_SRC,
+        );
 
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
-                buffer: &temp_buf.finish(),
-                offset: 0,
-                bytes_per_row: 4 * size,
-                rows_per_image: size,
+                buffer: &temp_buf,
+                layout: wgpu::TextureDataLayout {
+                    offset: 0,
+                    bytes_per_row: 4 * size,
+                    rows_per_image: size,
+                },
             },
             wgpu::TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
-                array_layer: 0,
                 origin: wgpu::Origin3d {
                     x: 0,
                     y: 0,

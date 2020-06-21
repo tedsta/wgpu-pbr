@@ -39,10 +39,14 @@ fn main() {
 
 
 async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
-    let instance = wgpu::Instance::new();
+    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
 
     let initial_screen_size = window.inner_size();
     let surface = unsafe { instance.create_surface(&window) };
+    let (needed_extensions, unsafe_extensions) = (
+        wgpu::Extensions::empty(),
+        wgt::UnsafeExtensions::disallow(),
+    );
 
     let adapter = 
         instance.request_adapter(
@@ -50,14 +54,16 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 power_preference: wgpu::PowerPreference::Default,
                 compatible_surface: Some(&surface),
             },
-            wgpu::BackendBit::PRIMARY,
+            unsafe_extensions,
         ).await.unwrap();
+    let adapter_extensions = adapter.extensions();
 
     let (device, queue) =
         adapter.request_device(
             &wgpu::DeviceDescriptor {
-                extensions: wgpu::Extensions { anisotropic_filtering: false },
+                extensions: adapter_extensions & needed_extensions,
                 limits: wgpu::Limits::default(),
+                shader_validation: true,
             },
             None,
         ).await.unwrap();
@@ -169,7 +175,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                     prev_mouse_x = position.x;
                     prev_mouse_y = position.y;
 
-                    player_rot_x += (delta_y as f32) * 0.5;
+                    player_rot_x -= (delta_y as f32) * 0.5;
                     player_rot_y += (delta_x as f32) * 0.5;
 
                     player_rot =
@@ -214,12 +220,12 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 );
 
                 // Render scene
-                let frame = swap_chain.get_next_texture().expect("output frame");
+                let frame = swap_chain.get_next_frame().expect("output frame");
                 let mut encoder =
                     renderer.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                         label: None,
                     });
-                renderer.render(&frame.view, &mut encoder, &scene);
+                renderer.render(&frame.output.view, &mut encoder, &scene);
                 renderer.queue.submit(Some(encoder.finish()));
             }
             _ => (),

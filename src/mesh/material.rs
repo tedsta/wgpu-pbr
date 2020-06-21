@@ -142,7 +142,8 @@ impl Material {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            ..Default::default()
         });
 
         // Create bind group
@@ -196,7 +197,8 @@ impl Material {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            ..Default::default()
         });
 
         // Create bind group
@@ -256,7 +258,8 @@ impl Material {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            ..Default::default()
         });
 
         // Create bind group
@@ -330,7 +333,8 @@ impl Material {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            ..Default::default()
         });
 
         // Create bind group

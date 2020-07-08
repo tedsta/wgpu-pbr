@@ -107,7 +107,7 @@ impl MeshPass {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: DEPTH_FORMAT,
+            format: sc_desc.format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 

@@ -125,9 +125,9 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
     let winit::dpi::PhysicalSize { width: win_w, height: win_h } = window.inner_size();
     let win_center_x = win_w / 2;
     let win_center_y = win_h / 2;
-    window.set_cursor_position(winit::dpi::LogicalPosition::new(
-        win_center_x, win_center_y,
-    )).expect("set cursor position");
+    let _ignore_error = window
+        .set_cursor_position(winit::dpi::LogicalPosition::new(win_center_x, win_center_y))
+        .map_err(|_| eprintln!("unable to set cursor position"));
     window.set_maximized(true);
 
     let mut player_rot_x: f32 = 0.0;

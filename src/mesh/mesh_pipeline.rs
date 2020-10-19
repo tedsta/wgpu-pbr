@@ -270,6 +270,74 @@ impl MeshPipeline {
                             dimension: wgpu::TextureViewDimension::D2,
                         },
                     ),
+                ],
+            });
+
+        // Get shaders
+        let vs_module = device.create_shader_module(
+            wgpu::include_spirv!("shaders/pbr_vert.spv")
+        );
+        let fs_module = device.create_shader_module(
+            wgpu::include_spirv!("shaders/tex_norm_frag.spv")
+        );
+
+        MeshPipeline::new(
+            sc_desc,
+            device,
+            global_bind_group_layout,
+            mesh_bind_group_layout,
+            part_bind_group_layout,
+            vs_module,
+            fs_module,
+        )
+    }
+
+    pub fn textured_norm_mat(
+        sc_desc: &wgpu::SwapChainDescriptor,
+        device: &mut wgpu::Device,
+        global_bind_group_layout: &wgpu::BindGroupLayout,
+        mesh_bind_group_layout: &wgpu::BindGroupLayout,
+    ) -> Self {
+        let part_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                bindings: &[
+                    // Material factors
+                    wgpu::BindGroupLayoutEntry::new(
+                        0,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: wgpu::BufferSize::new(
+                                mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
+                            ),
+                        },
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        1,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::Sampler { comparison: false },
+                    ),
+                    // Base texture
+                    wgpu::BindGroupLayoutEntry::new(
+                        2,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    ),
+                    // Normal map
+                    wgpu::BindGroupLayoutEntry::new(
+                        3,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    ),
                     wgpu::BindGroupLayoutEntry::new(
                         4,
                         wgpu::ShaderStage::FRAGMENT,

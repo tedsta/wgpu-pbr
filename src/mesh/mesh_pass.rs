@@ -17,6 +17,7 @@ pub struct MeshPass {
     pub(crate) textured_unlit: MeshPipeline,
     pub(crate) textured: MeshPipeline,
     pub(crate) textured_norm: MeshPipeline,
+    pub(crate) textured_norm_mat: MeshPipeline,
     pub(crate) textured_emissive: MeshPipeline,
 
     global_buf: wgpu::Buffer,
@@ -126,6 +127,9 @@ impl MeshPass {
         let textured_norm = MeshPipeline::textured_norm(
             sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
+        let textured_norm_mat = MeshPipeline::textured_norm_mat(
+            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+        );
         let textured_emissive = MeshPipeline::textured_emissive(
             sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
@@ -140,6 +144,7 @@ impl MeshPass {
             textured_unlit,
             textured,
             textured_norm,
+            textured_norm_mat,
             textured_emissive,
 
             depth_texture: depth_texture.create_default_view(),
@@ -308,6 +313,9 @@ impl MeshPass {
                         }
                         MaterialKind::TexturedNorm => {
                             rpass.set_pipeline(&self.textured_norm.pipeline);
+                        }
+                        MaterialKind::TexturedNormMat => {
+                            rpass.set_pipeline(&self.textured_norm_mat.pipeline);
                         }
                         MaterialKind::TexturedEmissive => {
                             rpass.set_pipeline(&self.textured_emissive.pipeline);

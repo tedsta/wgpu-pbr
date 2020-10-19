@@ -10,6 +10,7 @@ pub enum MaterialKind {
     TexturedUnlit,
     Textured,
     TexturedNorm,
+    TexturedNormMat,
     TexturedEmissive,
 }
 
@@ -64,17 +65,24 @@ impl Material {
                         &emissive
                     )
                 } else if let Some(ref normal) = data.normal {
-                    let metallic_roughness = data.metallic_roughness.as_ref()
-                        .expect("textured model without metallic roughness map");
-                    let ao = data.ao.as_ref().expect("textured model without ao map");
-                    Material::textured_norm(
-                        device, mesh_pass,
-                        data.factors.into(),
-                        &texture,
-                        &normal,
-                        metallic_roughness,
-                        ao,
-                    )
+                    if let Some(metallic_roughness) = data.metallic_roughness.as_ref() {
+                        let ao = data.ao.as_ref().expect("textured model without ao map");
+                        Material::textured_norm_mat(
+                            device, mesh_pass,
+                            data.factors.into(),
+                            &texture,
+                            &normal,
+                            metallic_roughness,
+                            ao,
+                        )
+                    } else {
+                        Material::textured_norm(
+                            device, mesh_pass,
+                            data.factors.into(),
+                            &texture,
+                            &normal,
+                        )
+                    }
                 } else {
                     Material::textured(
                         device, mesh_pass,
@@ -235,6 +243,67 @@ impl Material {
         factors: MaterialFactors,
         texture: &wgpu::Texture,
         normal_texture: &wgpu::Texture,
+    ) -> Self {
+        let factors_buf = device.create_buffer_with_data(
+            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+
+        let texture_view = texture.create_default_view();
+        let normal_map_view = normal_texture.create_default_view();
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: None,
+            ..Default::default()
+        });
+
+        // Create bind group
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &mesh_pass.textured_norm.part_bind_group_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::Binding {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&normal_map_view),
+                },
+            ],
+        });
+
+        Material {
+            factors_buf,
+            kind: MaterialKind::TexturedNorm,
+            bind_group,
+            factors,
+        }
+    }
+
+    fn textured_norm_mat(
+        device: &mut wgpu::Device,
+        mesh_pass: &MeshPass,
+        factors: MaterialFactors,
+        texture: &wgpu::Texture,
+        normal_texture: &wgpu::Texture,
         metallic_roughness_texture: &wgpu::Texture,
         ao_texture: &wgpu::Texture,
     ) -> Self {
@@ -296,7 +365,7 @@ impl Material {
 
         Material {
             factors_buf,
-            kind: MaterialKind::TexturedNorm,
+            kind: MaterialKind::TexturedNormMat,
             bind_group,
             factors,
         }

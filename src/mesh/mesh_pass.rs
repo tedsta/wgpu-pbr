@@ -190,7 +190,7 @@ impl MeshPass {
     ) {
         // Prepare to upload point lights
         let null_point_light = PointLightUpload {
-            pos: [0.0; 3], intensity: 0.0, color: [0.0; 3], _pad: 0,
+            proj: [0.0; 16], pos: [0.0; 3], intensity: 0.0, color: [0.0; 3], _pad: 0,
         };
         let mut point_lights = [null_point_light; 32];
         for (i, light) in scene.point_lights.values().enumerate() {
@@ -341,6 +341,7 @@ unsafe impl bytemuck::Zeroable for GlobalUniforms { }
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub(crate) struct PointLightUpload {
+    proj: [f32; 16],
     pos: [f32; 3],
     intensity: f32,
     color: [f32; 3],
@@ -362,7 +363,12 @@ pub(crate) struct SpotLightUpload {
 
 impl From<&PointLight> for PointLightUpload {
     fn from(v: &PointLight) -> Self {
+        let proj = ultraviolet::projection::rh_yup::perspective_gl(
+            v.fov, 1.0, v.near, v.far,
+        );
+
         PointLightUpload {
+            proj: *proj.as_array(),
             pos: v.pos,
             color: v.color,
             intensity: v.intensity,

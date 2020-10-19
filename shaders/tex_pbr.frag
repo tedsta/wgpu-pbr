@@ -11,6 +11,7 @@ layout(location = 4) in vec2 f_uv;
 layout(location = 5) in mat3 f_tbn;
 
 struct Light {
+    mat4 proj;
     vec3 position;
     float intensity;
     vec3 color;
@@ -42,8 +43,10 @@ layout(set = 2, binding = 0) uniform MeshPart {
     layout(offset = 48) vec3 emissive_factor;
     layout(offset = 64) vec3 extra_emissive;
 };
-layout(set = 2, binding = 1) uniform sampler tex_sampler;
-layout(set = 2, binding = 2) uniform texture2D albedo_map;
+layout(set = 2, binding = 1) uniform texture2DArray t_shadow;
+layout(set = 2, binding = 2) uniform samplerShadow s_shadow;
+layout(set = 2, binding = 3) uniform sampler tex_sampler;
+layout(set = 2, binding = 4) uniform texture2D albedo_map;
 
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 bright_color;

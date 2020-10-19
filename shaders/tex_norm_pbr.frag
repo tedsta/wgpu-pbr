@@ -11,6 +11,7 @@ layout(location = 4) in vec2 f_uv;
 layout(location = 5) in mat3 f_tbn;
 
 struct Light {
+    mat4 proj;
     vec3 position;
     float intensity;
     vec3 color;
@@ -42,11 +43,13 @@ layout(set = 2, binding = 0) uniform MeshPart {
     layout(offset = 48) vec3 emissive_factor;
     layout(offset = 64) vec3 extra_emissive;
 };
-layout(set = 2, binding = 1) uniform sampler tex_sampler;
-layout(set = 2, binding = 2) uniform texture2D albedo_map;
-layout(set = 2, binding = 3) uniform texture2D normal_map;
-layout(set = 2, binding = 4) uniform texture2D metallic_roughness_map;
-layout(set = 2, binding = 5) uniform texture2D ao_map;
+layout(set = 2, binding = 1) uniform texture2DArray t_shadow;
+layout(set = 2, binding = 2) uniform samplerShadow s_shadow;
+layout(set = 2, binding = 3) uniform sampler tex_sampler;
+layout(set = 2, binding = 4) uniform texture2D albedo_map;
+layout(set = 2, binding = 5) uniform texture2D normal_map;
+layout(set = 2, binding = 6) uniform texture2D metallic_roughness_map;
+layout(set = 2, binding = 7) uniform texture2D ao_map;
 
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 bright_color;
@@ -117,6 +120,22 @@ vec3 compute_light(vec3 attenuation,
     return resulting_light;
 }
 
+float fetch_shadow(int light_id, vec4 homogeneous_coords) {
+    if (homogeneous_coords.w <= 0.0) {
+        return 1.0;
+    }
+    // compensate for the Y-flip difference between the NDC and texture coordinates
+    const vec2 flip_correction = vec2(0.5, -0.5);
+    // compute texture coordinates for shadow lookup
+    vec4 light_local = vec4(
+        homogeneous_coords.xy * flip_correction / homogeneous_coords.w + 0.5,
+        light_id,
+        homogeneous_coords.z / homogeneous_coords.w
+    );
+    // do the lookup, using HW PCF and comparison
+    return texture(sampler2DArrayShadow(t_shadow, s_shadow), light_local);
+}
+
 void main() {
     vec4 albedo_rgba = texture(sampler2D(albedo_map, tex_sampler), f_uv) * in_diffuse;
     if (albedo_rgba.a == 0.0) discard;
@@ -141,6 +160,8 @@ void main() {
     for (int i = 0; i < point_light_count; i++) {
         vec3 light_direction = point_lights[i].position - f_world_pos.xyz;
         float attenuation = point_lights[i].intensity / dot(light_direction, light_direction);
+
+        float shadow = fetch_shadow(i, point_lights[i].proj * f_world_pos);
 
         vec3 light = compute_light(vec3(attenuation),
                                    point_lights[i].color,

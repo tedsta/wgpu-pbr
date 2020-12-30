@@ -334,7 +334,7 @@ impl Material {
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
-            layout: &mesh_pass.textured_norm.part_bind_group_layout,
+            layout: &mesh_pass.textured_norm_mat.part_bind_group_layout,
             bindings: &[
                 wgpu::Binding {
                     binding: 0,

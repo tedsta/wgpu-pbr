@@ -1,4 +1,4 @@
-use ultraviolet::{self, Mat4, Vec3, Vec4, Vec4i};
+use ultraviolet::{self, Mat4, Vec3, Vec4};
 
 pub struct Camera {
     pub proj: Mat4,
@@ -45,7 +45,7 @@ impl Camera {
         &self.position
     }
 
-    pub fn project_world_to_screen(&self, viewport: Vec4i, world: Vec3) -> Option<Vec3> {
+    pub fn project_world_to_screen(&self, viewport: Vec4, world: Vec3) -> Option<Vec3> {
         let screen = (self.proj * self.view) * world.into_homogeneous_point();
 
         if screen.w != 0.0 {
@@ -66,7 +66,7 @@ impl Camera {
         }
     }
 
-    pub fn project_screen_to_world(&self, screen: Vec3, viewport: Vec4i) -> Option<Vec3> {
+    pub fn project_screen_to_world(&self, screen: Vec3, viewport: Vec4) -> Option<Vec3> {
         let mut view_projection = self.proj * self.view;
 
         // TODO verify invertable?

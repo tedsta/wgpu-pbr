@@ -1,3 +1,5 @@
+use ultraviolet::{Mat4, Vec3};
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Vertex {
@@ -30,6 +32,18 @@ impl MeshPartGeometry {
         }
 
         (mins, maxes)
+    }
+
+    pub fn transform(&mut self, transform: Mat4) {
+        for vertex in &mut self.vertices {
+            let position = Vec3::new(vertex.pos[0], vertex.pos[1], vertex.pos[2]);
+            let transformed_position = transform.transform_point3(position);
+            vertex.pos = [
+                transformed_position.x,
+                transformed_position.y,
+                transformed_position.z,
+            ];
+        }
     }
 }
 

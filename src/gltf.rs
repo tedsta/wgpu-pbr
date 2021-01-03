@@ -2,6 +2,8 @@ use std::io;
 use std::path::Path;
 use std::rc::Rc;
 
+use ultraviolet::{Bivec3, Mat4, Rotor3, Vec3};
+
 use crate::resources::ResourceLoader;
 use super::compute_tangents::compute_tangents;
 use super::mesh::{Vertex, MeshPartData, MeshPartGeometry, MaterialData, MaterialFactors};
@@ -56,14 +58,30 @@ pub fn load_gltf(
 
     for node in gltf.nodes() {
         if let Some(ref mesh) = node.mesh() {
-            mesh_parts.extend(load_gltf_mesh(
+            let mut node_mesh_parts = load_gltf_mesh(
                 resources,
                 &gltf,
                 &gltf_buffers,
                 &mesh,
                 &path,
                 base_path,
-            )?);
+            )?;
+
+            let (part_pos, part_rot, part_scale) = node.transform().decomposed();
+
+            let transform =
+		Mat4::from_translation(Vec3::new(part_pos[0], part_pos[1], part_pos[2])) *
+		    Mat4::from_nonuniform_scale(
+                        Vec3::new(part_scale[0], part_scale[1], part_scale[2])
+                    ) *
+                    Rotor3::new(part_rot[3], Bivec3::new(-part_rot[2], part_rot[1], -part_rot[0]))
+                        .into_matrix().into_homogeneous();
+
+            for mesh_part in &mut node_mesh_parts {
+                mesh_part.geometry.transform(transform);
+            }
+
+            mesh_parts.extend(node_mesh_parts);
         }
     }
 

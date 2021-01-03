@@ -14,7 +14,7 @@ image = "0.23.4"
 bytemuck = "1"
 futures = "0.3"
 
-ultraviolet = "=0.4.6"
+ultraviolet = "=0.7.5"
 
 slotmap = "0.4.0"
 

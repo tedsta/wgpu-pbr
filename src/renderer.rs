@@ -55,12 +55,8 @@ impl Renderer {
     }
 
     pub fn mesh_parts_from_file(&mut self, path: impl AsRef<Path>) -> Vec<MeshPartData> {
-        let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::mesh_parts_from_file") }
-        );
-
         let mut resource_loader = ResourceLoader::new(
-            &mut self.device, &mut encoder, &mut self.resources,
+            &mut self.device, &mut self.queue, &mut self.resources,
         );
 
         let ext = path.as_ref().extension()
@@ -75,7 +71,7 @@ impl Renderer {
                 panic!("Failed to load mesh '{}' - unknown file type.", path.as_ref().display());
             };
 
-        self.queue.submit(Some(encoder.finish()));
+        self.queue.submit(None);
         
         mesh_parts
     }
@@ -85,18 +81,14 @@ impl Renderer {
         path: impl AsRef<Path>,
         reader: impl std::io::Read + std::io::Seek,
     ) -> Vec<MeshPartData> {
-        let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::mesh_parts_from_file") }
-        );
-
         let mut resource_loader = ResourceLoader::new(
-            &mut self.device, &mut encoder, &mut self.resources,
+            &mut self.device, &mut self.queue, &mut self.resources,
         );
 
         let mesh_parts =
             load_gltf_from_reader(&mut resource_loader, path, reader).expect("load gltf");
 
-        self.queue.submit(Some(encoder.finish()));
+        self.queue.submit(None);
         
         mesh_parts
     }
@@ -104,17 +96,13 @@ impl Renderer {
     pub fn gltf_single_mesh_parts(
         &mut self, path: impl AsRef<Path>, mesh_name: &str,
     ) -> Result<Option<(Vec<MeshPartData>, gltf::scene::Transform)>, GltfLoadError> {
-        let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: Some("Renderer::gltf_single_mesh_parts") }
-        );
-
         let mut resource_loader = ResourceLoader::new(
-            &mut self.device, &mut encoder, &mut self.resources,
+            &mut self.device, &mut self.queue, &mut self.resources,
         );
 
         let maybe_mesh_parts = load_gltf_single_mesh(&mut resource_loader, path, mesh_name)?;
 
-        self.queue.submit(Some(encoder.finish()));
+        self.queue.submit(None);
 
         Ok(maybe_mesh_parts)
     }

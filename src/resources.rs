@@ -2,20 +2,20 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-pub struct ResourceLoader<'d, 'c, 'r> {
+pub struct ResourceLoader<'d, 'q, 'r> {
     device: &'d mut wgpu::Device,
-    encoder: &'c mut wgpu::CommandEncoder,
+    queue: &'q mut wgpu::Queue,
     resources: &'r mut Resources,
 }
 
-impl<'d, 'c, 'r> ResourceLoader<'d, 'c, 'r> {
+impl<'d, 'q, 'r> ResourceLoader<'d, 'q, 'r> {
     pub fn new(
         device: &'d mut wgpu::Device,
-        encoder: &'c mut wgpu::CommandEncoder,
+        queue: &'q mut wgpu::Queue,
         resources: &'r mut Resources,
     ) -> Self {
         ResourceLoader {
-            device, encoder, resources,
+            device, queue, resources,
         }
     }
 
@@ -24,7 +24,7 @@ impl<'d, 'c, 'r> ResourceLoader<'d, 'c, 'r> {
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> Rc<wgpu::Texture> {
-        self.resources.load_texture(self.device, self.encoder, path, srgb)
+        self.resources.load_texture(self.device, self.queue, path, srgb)
     }
 
     pub fn texture_from_bytes(
@@ -33,11 +33,11 @@ impl<'d, 'c, 'r> ResourceLoader<'d, 'c, 'r> {
         texture_bytes: &[u8],
         srgb: bool,
     ) -> Rc<wgpu::Texture> {
-        let ResourceLoader { device, encoder, resources } = self;
+        let ResourceLoader { device, queue, resources } = self;
         resources.textures.entry(name.as_ref().into())
             .or_insert_with(|| {
                 Rc::new(Resources::texture_from_bytes(
-                    device, encoder, srgb, texture_bytes,
+                    device, queue, srgb, texture_bytes,
                 ))
             })
             .clone()
@@ -58,18 +58,18 @@ impl Resources {
     pub fn load_texture(
         &mut self,
         device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &mut wgpu::Queue,
         path: impl AsRef<Path>,
         srgb: bool,
     ) -> Rc<wgpu::Texture> {
         self.textures.entry(path.as_ref().into())
-            .or_insert_with(|| Rc::new(Self::texture_from_path(device, encoder, path, srgb)))
+            .or_insert_with(|| Rc::new(Self::texture_from_path(device, queue, path, srgb)))
             .clone()
     }
 
     fn texture_from_path(
         device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &mut wgpu::Queue,
         texture_path: impl AsRef<Path>,
         srgb: bool,
     ) -> wgpu::Texture {
@@ -78,12 +78,12 @@ impl Resources {
             img @ _ => img.to_rgba(),
         };
 
-        Self::texture_to_gpu(device, encoder, srgb, img)
+        Self::texture_to_gpu(device, queue, srgb, img)
     }
 
     fn texture_from_bytes(
         device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &mut wgpu::Queue,
         srgb: bool,
         texture_bytes: &[u8],
     ) -> wgpu::Texture {
@@ -93,12 +93,12 @@ impl Resources {
             img @ _ => img.to_rgba(),
         };
 
-        Self::texture_to_gpu(device, encoder, srgb, img)
+        Self::texture_to_gpu(device, queue, srgb, img)
     }
 
     fn texture_to_gpu(
         device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &mut wgpu::Queue,
         srgb: bool,
         img: image::RgbaImage,
     ) -> wgpu::Texture {
@@ -122,27 +122,18 @@ impl Resources {
             },
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
-        let temp_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&texels), wgpu::BufferUsage::COPY_SRC,
-        );
 
-        encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &temp_buf,
-                layout: wgpu::TextureDataLayout {
-                    offset: 0,
-                    bytes_per_row: 4 * size,
-                    rows_per_image: size,
-                },
-            },
+        queue.write_texture(
             wgpu::TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: 0,
-                    y: 0,
-                    z: 0,
-                },
+                origin: wgpu::Origin3d::ZERO,
+            },
+            bytemuck::cast_slice(&texels),
+            wgpu::TextureDataLayout {
+                offset: 0,
+                bytes_per_row: 4 * size,
+                rows_per_image: size,
             },
             texture_extent,
         );

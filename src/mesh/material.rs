@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use bytemuck::{Pod, Zeroable};
+use wgpu::util::DeviceExt;
 
 use super::mesh_pass::MeshPass;
 
@@ -117,10 +118,11 @@ impl Material {
         device: &mut wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
     ) {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(self.factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_SRC,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(self.factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_SRC,
+        });
         encoder.copy_buffer_to_buffer(
             &factors_buf, 0, &self.factors_buf, 0,
             std::mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
@@ -133,12 +135,13 @@ impl Material {
         factors: MaterialFactors,
         texture: &wgpu::Texture,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let texture_view = texture.create_default_view();
+        let texture_view = texture.create_view(&Default::default());
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -158,16 +161,16 @@ impl Material {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.textured_unlit.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
@@ -188,12 +191,13 @@ impl Material {
         factors: MaterialFactors,
         texture: &wgpu::Texture,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let texture_view = texture.create_default_view();
+        let texture_view = texture.create_view(&Default::default());
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -213,16 +217,16 @@ impl Material {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.textured.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
@@ -244,13 +248,14 @@ impl Material {
         texture: &wgpu::Texture,
         normal_texture: &wgpu::Texture,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let texture_view = texture.create_default_view();
-        let normal_map_view = normal_texture.create_default_view();
+        let texture_view = texture.create_view(&Default::default());
+        let normal_map_view = normal_texture.create_view(&Default::default());
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -270,20 +275,20 @@ impl Material {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.textured_norm.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(&normal_map_view),
                 },
@@ -307,15 +312,16 @@ impl Material {
         metallic_roughness_texture: &wgpu::Texture,
         ao_texture: &wgpu::Texture,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let texture_view = texture.create_default_view();
-        let normal_map_view = normal_texture.create_default_view();
-        let metallic_roughness_map_view = metallic_roughness_texture.create_default_view();
-        let ao_map_view = ao_texture.create_default_view();
+        let texture_view = texture.create_view(&Default::default());
+        let normal_map_view = normal_texture.create_view(&Default::default());
+        let metallic_roughness_map_view = metallic_roughness_texture.create_view(&Default::default());
+        let ao_map_view = ao_texture.create_view(&Default::default());
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -335,28 +341,28 @@ impl Material {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.textured_norm_mat.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(&normal_map_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&metallic_roughness_map_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 5,
                     resource: wgpu::BindingResource::TextureView(&ao_map_view),
                 },
@@ -381,16 +387,17 @@ impl Material {
         ao_texture: &wgpu::Texture,
         emissive_texture: &wgpu::Texture,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let texture_view = texture.create_default_view();
-        let normal_map_view = normal_texture.create_default_view();
-        let metallic_roughness_map_view = metallic_roughness_texture.create_default_view();
-        let ao_map_view = ao_texture.create_default_view();
-        let emissive_map_view = emissive_texture.create_default_view();
+        let texture_view = texture.create_view(&Default::default());
+        let normal_map_view = normal_texture.create_view(&Default::default());
+        let metallic_roughness_map_view = metallic_roughness_texture.create_view(&Default::default());
+        let ao_map_view = ao_texture.create_view(&Default::default());
+        let emissive_map_view = emissive_texture.create_view(&Default::default());
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -410,32 +417,32 @@ impl Material {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.textured_emissive.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(&normal_map_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&metallic_roughness_map_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 5,
                     resource: wgpu::BindingResource::TextureView(&ao_map_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 6,
                     resource: wgpu::BindingResource::TextureView(&emissive_map_view),
                 },
@@ -455,19 +462,20 @@ impl Material {
         mesh_pass: &MeshPass,
         factors: MaterialFactors,
     ) -> Self {
-        let factors_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let factors_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[MaterialFactorsUpload::from(factors)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.untextured.part_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(factors_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(factors_buf.as_entire_buffer_binding()),
                 },
             ],
         });

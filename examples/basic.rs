@@ -39,50 +39,46 @@ fn main() {
 
 
 async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
-    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
 
     let initial_screen_size = window.inner_size();
     let surface = unsafe { instance.create_surface(&window) };
-    let (needed_extensions, unsafe_extensions) = (
-        wgpu::Extensions::empty(),
-        wgt::UnsafeExtensions::disallow(),
-    );
+    let needed_extensions = wgpu::Features::empty();
 
     let adapter = 
         instance.request_adapter(
             &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::Default,
+                power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
             },
-            unsafe_extensions,
         ).await.unwrap();
-    let adapter_extensions = adapter.extensions();
+    let adapter_features = adapter.features();
 
     let (device, queue) =
         adapter.request_device(
             &wgpu::DeviceDescriptor {
-                extensions: adapter_extensions & needed_extensions,
+                label: None,
+                features: adapter_features & needed_extensions,
                 limits: wgpu::Limits::default(),
-                shader_validation: true,
             },
             None,
         ).await.unwrap();
 
-    let mut sc_desc = wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+    let mut surface_config = wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         //format: wgpu::TextureFormat::Bgra8UnormSrgb,
         format: wgpu::TextureFormat::Bgra8Unorm,
         width: initial_screen_size.width,
         height: initial_screen_size.height,
         present_mode: wgpu::PresentMode::Fifo,
     };
-    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
+    surface.configure(&device, &surface_config);
 
     ////////////////////////////////////
 
-    let camera = Camera::new(sc_desc.width as f32 / sc_desc.height as f32);
+    let camera = Camera::new(surface_config.width as f32 / surface_config.height as f32);
     let mut scene = Scene::new(camera);
-    let mut renderer = Renderer::new(&sc_desc, device, queue);
+    let mut renderer = Renderer::new(&surface_config, device, queue);
 
     #[cfg(not(target_arch = "wasm32"))]
     let mesh_id = {
@@ -148,12 +144,12 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
         match event {
             event::Event::MainEventsCleared => window.request_redraw(),
             event::Event::WindowEvent { event: WindowEvent::Resized(size), .. } => {
-                sc_desc.width = size.width;
-                sc_desc.height = size.height;
-                swap_chain = renderer.device.create_swap_chain(&surface, &sc_desc);
+                surface_config.width = size.width;
+                surface_config.height = size.height;
+                surface.configure(&renderer.device, &surface_config);
 
-                scene.camera.resize(sc_desc.width as f32 / sc_desc.height as f32);
-                renderer.mesh_pass.resize(&sc_desc, &mut renderer.device);
+                scene.camera.resize(surface_config.width as f32 / surface_config.height as f32);
+                renderer.mesh_pass.resize(&surface_config, &mut renderer.device);
             }
             event::Event::WindowEvent { event, .. } => match event {
                 WindowEvent::KeyboardInput {
@@ -220,12 +216,12 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 );
 
                 // Render scene
-                let frame = swap_chain.get_next_frame().expect("output frame");
+                let frame = surface.get_current_frame().expect("output frame");
                 let mut encoder =
                     renderer.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                         label: None,
                     });
-                renderer.render(&frame.output.view, &mut encoder, &scene);
+                renderer.render(&frame.output.texture.create_view(&wgpu::TextureViewDescriptor::default()), &mut encoder, &scene);
                 renderer.queue.submit(Some(encoder.finish()));
             }
             _ => (),

@@ -1,5 +1,7 @@
 use std::mem;
 
+use wgpu::util::DeviceExt;
+
 use crate::{PointLight, SpotLight}; 
 use super::{
     super::Scene,
@@ -27,7 +29,7 @@ pub struct MeshPass {
 
 impl MeshPass {
     pub fn init(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        surface_config: &wgpu::SurfaceConfiguration,
         device: &mut wgpu::Device,
         queue: &mut wgpu::Queue,
     ) -> Self {
@@ -38,48 +40,52 @@ impl MeshPass {
         let mesh_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: None,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<GlobalUniforms>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         let global_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("mesh-global-buf"),
             size: std::mem::size_of::<GlobalUniforms>() as wgpu::BufferAddress,
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &global_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(global_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(global_buf.as_entire_buffer_binding()),
                 },
             ],
         });
@@ -87,51 +93,51 @@ impl MeshPass {
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
+                width: surface_config.width,
+                height: surface_config.height,
+                depth_or_array_layers: 1,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: DEPTH_FORMAT,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         });
 
         let bloom_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
+                width: surface_config.width,
+                height: surface_config.height,
+                depth_or_array_layers: 1,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: sc_desc.format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            format: surface_config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         });
 
         // Done
         queue.submit(Some(init_encoder.finish()));
 
         let untextured = MeshPipeline::untextured(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
         let textured_unlit = MeshPipeline::textured_unlit(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
         let textured = MeshPipeline::textured(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
         let textured_norm = MeshPipeline::textured_norm(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
         let textured_norm_mat = MeshPipeline::textured_norm_mat(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
         let textured_emissive = MeshPipeline::textured_emissive(
-            sc_desc, device, &global_bind_group_layout, &mesh_bind_group_layout,
+            surface_config.format, device, &global_bind_group_layout, &mesh_bind_group_layout,
         );
 
         MeshPass {
@@ -147,43 +153,43 @@ impl MeshPass {
             textured_norm_mat,
             textured_emissive,
 
-            depth_texture: depth_texture.create_default_view(),
-            bloom_texture: bloom_texture.create_default_view(),
+            depth_texture: depth_texture.create_view(&Default::default()),
+            bloom_texture: bloom_texture.create_view(&Default::default()),
         }
     }
 
     pub fn resize(
         &mut self,
-        sc_desc: &wgpu::SwapChainDescriptor,
+        surface_config: &wgpu::SurfaceConfiguration,
         device: &mut wgpu::Device,
     ) {
         self.depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
+                width: surface_config.width,
+                height: surface_config.height,
+                depth_or_array_layers: 1,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: DEPTH_FORMAT,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        }).create_default_view();
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        }).create_view(&Default::default());
 
         self.bloom_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
+                width: surface_config.width,
+                height: surface_config.height,
+                depth_or_array_layers: 1,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: sc_desc.format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        }).create_default_view();
+            format: surface_config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        }).create_view(&Default::default());
     }
 
     pub fn render(
@@ -235,10 +241,11 @@ impl MeshPass {
             _pad0: [0; 3],
             spot_lights: spot_lights,
         };
-        let global_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&[global_uniforms]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_SRC,
-        );
+        let global_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[global_uniforms]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_SRC,
+        });
         encoder.copy_buffer_to_buffer(
             &global_buf, 0, &self.global_buf, 0,
             std::mem::size_of::<GlobalUniforms>() as wgpu::BufferAddress,
@@ -247,18 +254,20 @@ impl MeshPass {
         // Upload mesh transform matrices
         for mesh in scene.meshes.values() {
             let transform = mesh.transform();
-            let temp_buf = device.create_buffer_with_data(
-                bytemuck::cast_slice(transform.as_slice()),
-                wgpu::BufferUsage::COPY_SRC,
-            );
+            let temp_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(transform.as_slice()),
+                usage: wgpu::BufferUsages::COPY_SRC,
+            });
             encoder.copy_buffer_to_buffer(&temp_buf, 0, &mesh.uniform_buf(), 0, 64);
         }
 
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
                 color_attachments: &[
-                    wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &render_target,
+                    wgpu::RenderPassColorAttachment {
+                        view: &render_target,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -270,8 +279,8 @@ impl MeshPass {
                             store: true,
                         },
                     },
-                    wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &self.bloom_texture,
+                    wgpu::RenderPassColorAttachment {
+                        view: &self.bloom_texture,
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -284,8 +293,8 @@ impl MeshPass {
                         },
                     },
                 ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.depth_texture,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(5.0),
                         store: true,
@@ -322,7 +331,7 @@ impl MeshPass {
                         }
                     }
                     rpass.set_bind_group(2, &part.material.bind_group(), &[]);
-                    rpass.set_index_buffer(part.index_buf().slice(..));
+                    rpass.set_index_buffer(part.index_buf().slice(..), wgpu::IndexFormat::Uint32);
                     rpass.set_vertex_buffer(0, part.vertex_buf().slice(..));
                     rpass.draw_indexed(0 .. part.index_count() as u32, 0, 0 .. 1);
                 }

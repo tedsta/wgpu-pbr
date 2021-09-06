@@ -1,3 +1,5 @@
+use wgpu::util::DeviceExt;
+
 use super::{
     geometry::MeshPartGeometry,
     material::{Material, MaterialData},
@@ -27,14 +29,16 @@ impl MeshPart {
         let material = Material::new(device, mesh_pass, &data.material);
 
         // Create the vertex and index buffers
-        let vertex_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&data.geometry.vertices),
-            wgpu::BufferUsage::VERTEX
-        );
-        let index_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(&data.geometry.indices),
-            wgpu::BufferUsage::INDEX
-        );
+        let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&data.geometry.vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&data.geometry.indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         MeshPart {
             material,

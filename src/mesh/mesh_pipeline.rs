@@ -40,18 +40,18 @@ impl MeshPipeline {
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &[
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x4,
+                            format: wgpu::VertexFormat::Float32x3,
                             offset: 0,
                             shader_location: 0,
                         },
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x4,
+                            format: wgpu::VertexFormat::Float32x3,
                             offset: 3 * 4,
                             shader_location: 1,
                         },
                         wgpu::VertexAttribute {
                             format: wgpu::VertexFormat::Float32x4,
-                            offset: 4 * 4 + 4 * 4,
+                            offset: 3 * 4 + 3 * 4,
                             shader_location: 2,
                         },
                         wgpu::VertexAttribute {
@@ -86,7 +86,6 @@ impl MeshPipeline {
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                //strip_index_format: Some(wgpu::IndexFormat::Uint32),
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
@@ -112,7 +111,7 @@ impl MeshPipeline {
             }),
             multisample: wgpu::MultisampleState {
                 count: 1,
-                mask: 0xFFFFFFFFFFFFFFFF,
+                mask: !0,
                 alpha_to_coverage_enabled: false,
             },
         });
@@ -149,7 +148,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
                         count: None,
                     },
                     // Base texture
@@ -211,7 +210,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
                         count: None,
                     },
                     // Base texture
@@ -273,7 +272,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
                         count: None,
                     },
                     // Base texture
@@ -346,7 +345,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
                         count: None,
                     },
                     // Base texture
@@ -439,7 +438,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
                         count: None,
                     },
                     // Base texture

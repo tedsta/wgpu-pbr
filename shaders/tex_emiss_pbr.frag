@@ -120,7 +120,6 @@ vec3 compute_light(vec3 attenuation,
 
 void main() {
     vec4 albedo_rgba = texture(sampler2D(albedo_map, tex_sampler), f_uv) * in_diffuse;
-    if (albedo_rgba.a == 0.0) discard;
     vec3 albedo = albedo_rgba.rgb;
 
     vec3 normal = texture(sampler2D(normal_map, tex_sampler), f_uv).rgb;
@@ -136,6 +135,8 @@ void main() {
     float ambient_occlusion = 1.0; //texture(sampler2D(ao_map, tex_sampler), f_uv).r;
 
     vec3 emission = texture(sampler2D(emissive_map, tex_sampler), f_uv).rgb + extra_emissive;
+
+    if (albedo_rgba.a == 0.0) discard;
 
     vec3 view_dist = camera_pos - f_world_pos.xyz;
     vec3 view_direction = normalize(view_dist);

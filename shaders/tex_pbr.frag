@@ -4,11 +4,11 @@
 layout(early_fragment_tests) in;
 
 layout(location = 0) in vec4 f_world_pos;
-layout(location = 1) in vec3 f_norm;
-layout(location = 2) in vec3 f_tang;
-layout(location = 3) flat in float f_tbn_handedness;
-layout(location = 4) in vec2 f_uv;
-layout(location = 5) in mat3 f_tbn;
+layout(location = 1) in vec2 f_uv;
+// XXX mat3 isn't interpolated so we pass in rows individually
+layout(location = 2) in vec3 f_tbn_t;
+layout(location = 3) in vec3 f_tbn_b;
+layout(location = 4) in vec3 f_tbn_n;
 
 struct Light {
     vec3 position;
@@ -119,7 +119,7 @@ void main() {
     if (albedo_rgba.a == 0.0) discard;
     vec3 albedo = albedo_rgba.rgb;
 
-    vec3 normal = f_norm;
+    vec3 normal = f_tbn_n;
 
     float metallic = metal_factor;
     float roughness = rough_factor;

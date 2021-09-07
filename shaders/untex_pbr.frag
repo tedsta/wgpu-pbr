@@ -4,11 +4,11 @@
 layout(early_fragment_tests) in;
 
 layout(location = 0) in vec4 f_world_pos;
-layout(location = 1) in vec3 f_norm;
-layout(location = 2) in vec3 f_tang;
-layout(location = 3) flat in float f_tbn_handedness;
-layout(location = 4) in vec2 f_uv;
-layout(location = 5) in mat3 f_tbn;
+layout(location = 1) in vec2 f_uv;
+// XXX mat3 isn't interpolated so we pass in rows individually
+layout(location = 2) in vec3 f_tbn_t;
+layout(location = 3) in vec3 f_tbn_b;
+layout(location = 4) in vec3 f_tbn_n;
 
 struct Light {
     vec3 position;
@@ -127,7 +127,7 @@ void main() {
     vec3 emissive_factor = vec3(1.0, 1.0, 1.0);*/
 
     vec3 albedo = in_diffuse.xyz;
-    vec3 normal = vec3(0.0, 0.0, 1.0);
+    vec3 normal = f_tbn_n;
     float metallic = metal_factor;
     float roughness = rough_factor;
     float ambient_occlusion = 0.5;
@@ -135,17 +135,8 @@ void main() {
 
     /////////////////////////////////
 
-    // normal conversion
-    //normal = normal * 2 - 1;
-
     float roughness2 = roughness * roughness;
     vec3 fresnel_base = mix(vec3(0.04), albedo, metallic);
-
-    vec3 vertex_normal = f_norm;
-    vec3 vertex_tangent = normalize(f_tang - vertex_normal * dot(vertex_normal, f_tang));
-    vec3 vertex_bitangent = normalize(cross(vertex_normal, vertex_tangent) * f_tbn_handedness);
-    mat3 vertex_basis = mat3(vertex_tangent, vertex_bitangent, vertex_normal);
-    normal = normalize(vertex_basis * normal);
 
     vec3 view_direction = normalize(camera_pos - f_world_pos.xyz);
     vec3 lighted = vec3(0.0);

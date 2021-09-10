@@ -15,11 +15,11 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        surface_config: &wgpu::SurfaceConfiguration,
         mut device: wgpu::Device,
         mut queue: wgpu::Queue,
     ) -> Renderer {
-        let mesh_pass = MeshPass::init(&sc_desc, &mut device, &mut queue);
+        let mesh_pass = MeshPass::init(surface_config, &mut device, &mut queue);
 
         Renderer {
             device,

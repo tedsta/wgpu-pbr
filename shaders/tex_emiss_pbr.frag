@@ -4,11 +4,11 @@
 layout(early_fragment_tests) in;
 
 layout(location = 0) in vec4 f_world_pos;
-layout(location = 1) in vec3 f_norm;
-layout(location = 2) in vec3 f_tang;
-layout(location = 3) flat in float f_tbn_handedness;
-layout(location = 4) in vec2 f_uv;
-layout(location = 5) in mat3 f_tbn;
+layout(location = 1) in vec2 f_uv;
+// XXX mat3 isn't interpolated so we pass in rows individually
+layout(location = 2) in vec3 f_tbn_t;
+layout(location = 3) in vec3 f_tbn_b;
+layout(location = 4) in vec3 f_tbn_n;
 
 struct Light {
     vec3 position;
@@ -120,8 +120,9 @@ vec3 compute_light(vec3 attenuation,
 
 void main() {
     vec4 albedo_rgba = texture(sampler2D(albedo_map, tex_sampler), f_uv) * in_diffuse;
-    if (albedo_rgba.a == 0.0) discard;
     vec3 albedo = albedo_rgba.rgb;
+
+    mat3 f_tbn = mat3(f_tbn_t, f_tbn_b, f_tbn_n);
 
     vec3 normal = texture(sampler2D(normal_map, tex_sampler), f_uv).rgb;
     normal = normalize(normal * 2 - 1); // Convert [0, 1] to [-1, 1]
@@ -136,6 +137,8 @@ void main() {
     float ambient_occlusion = 1.0; //texture(sampler2D(ao_map, tex_sampler), f_uv).r;
 
     vec3 emission = texture(sampler2D(emissive_map, tex_sampler), f_uv).rgb + extra_emissive;
+
+    if (albedo_rgba.a == 0.0) discard;
 
     vec3 view_dist = camera_pos - f_world_pos.xyz;
     vec3 view_direction = normalize(view_dist);

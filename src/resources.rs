@@ -106,7 +106,7 @@ impl Resources {
         let texture_extent = wgpu::Extent3d {
             width: size,
             height: size,
-            depth: 1,
+            depth_or_array_layers: 1,
         };
         let texels = img.into_raw();
         let texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -120,20 +120,21 @@ impl Resources {
             } else {
                 wgpu::TextureFormat::Rgba8Unorm
             },
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         });
 
         queue.write_texture(
-            wgpu::TextureCopyView {
+            wgpu::ImageCopyTexture {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&texels),
-            wgpu::TextureDataLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: 4 * size,
-                rows_per_image: size,
+                bytes_per_row: std::num::NonZeroU32::new(4 * size),
+                rows_per_image: std::num::NonZeroU32::new(size),
             },
             texture_extent,
         );

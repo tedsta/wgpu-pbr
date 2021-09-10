@@ -1,4 +1,5 @@
 use ultraviolet::{Mat4, Rotor3, Vec3};
+use wgpu::util::DeviceExt;
 
 use super::{
     mesh_part::{MeshPart, MeshPartData},
@@ -25,19 +26,20 @@ impl Mesh {
     ) -> Mesh {
         let transform = Mat4::identity();
         let transform_ref: &[f32; 16] = transform.as_array();
-        let uniform_buf = device.create_buffer_with_data(
-            bytemuck::cast_slice(transform_ref),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(transform_ref),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &mesh_pass.mesh_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(uniform_buf.as_entire_buffer_binding()),
                 },
             ],
         });

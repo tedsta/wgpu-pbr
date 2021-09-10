@@ -11,7 +11,7 @@ pub struct MeshPipeline {
 
 impl MeshPipeline {
     fn new(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -20,6 +20,8 @@ impl MeshPipeline {
         fs_module: wgpu::ShaderModule,
     ) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: None,
+            push_constant_ranges: &[],
             bind_group_layouts: &[
                 global_bind_group_layout,
                 mesh_bind_group_layout,
@@ -28,78 +30,71 @@ impl MeshPipeline {
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            layout: &pipeline_layout,
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
+            label: None,
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
                 module: &vs_module,
                 entry_point: "main",
-            },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                module: &fs_module,
-                entry_point: "main",
-            }),
-            rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::None,
-                depth_bias: 0,
-                depth_bias_slope_scale: 0.0,
-                depth_bias_clamp: 0.0,
-            }),
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &[
-                wgpu::ColorStateDescriptor {
-                    format: sc_desc.format,
-                    color_blend: wgpu::BlendDescriptor::REPLACE,
-                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
-                    write_mask: wgpu::ColorWrite::ALL,
-                },
-                wgpu::ColorStateDescriptor {
-                    format: sc_desc.format,
-                    color_blend: wgpu::BlendDescriptor::REPLACE,
-                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
-                    write_mask: wgpu::ColorWrite::ALL,
-                },
-            ],
-            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
-                format: DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_read_mask: 0,
-                stencil_write_mask: 0,
-            }),
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                    stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                    step_mode: wgpu::InputStepMode::Vertex,
-                    attributes: &[
-                        wgpu::VertexAttributeDescriptor {
-                            format: wgpu::VertexFormat::Float4,
-                            offset: 0,
-                            shader_location: 0,
-                        },
-                        wgpu::VertexAttributeDescriptor {
-                            format: wgpu::VertexFormat::Float4,
-                            offset: 3 * 4,
-                            shader_location: 1,
-                        },
-                        wgpu::VertexAttributeDescriptor {
-                            format: wgpu::VertexFormat::Float4,
-                            offset: 4 * 4 + 4 * 4,
-                            shader_location: 2,
-                        },
-                        wgpu::VertexAttributeDescriptor {
-                            format: wgpu::VertexFormat::Float2,
-                            offset: 3 * 4 + 3 * 4 + 4 * 4,
-                            shader_location: 3,
-                        },
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &wgpu::vertex_attr_array![
+                        0 => Float32x3, 1 => Float32x3, 2 => Float32x4, 3 => Float32x2,
                     ],
                 }],
             },
-            sample_count: 1,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
+            fragment: Some(wgpu::FragmentState {
+                module: &fs_module,
+                entry_point: "main",
+                targets: &[
+                    wgpu::ColorTargetState {
+                        format: swapchain_format,
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent::REPLACE,
+                            alpha: wgpu::BlendComponent::REPLACE,
+                        }),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    },
+                    wgpu::ColorTargetState {
+                        format: swapchain_format,
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent::REPLACE,
+                            alpha: wgpu::BlendComponent::REPLACE,
+                        }),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    },
+                ],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                clamp_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState {
+                    front: wgpu::StencilFaceState::IGNORE,
+                    back: wgpu::StencilFaceState::IGNORE,
+                    read_mask: 0,
+                    write_mask: 0,
+                },
+                bias: wgpu::DepthBiasState {
+                    constant: 0,
+                    slope_scale: 0.0,
+                    clamp: 0.0,
+                },
+            }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
         });
 
         MeshPipeline {
@@ -109,7 +104,7 @@ impl MeshPipeline {
     }
 
     pub fn textured_unlit(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -117,46 +112,50 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        1,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::Sampler { comparison: false },
-                    ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        count: None,
+                    },
                     // Base texture
-                    wgpu::BindGroupLayoutEntry::new(
-                        2,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_unlit_vert.spv")
+            &wgpu::include_spirv!("shaders/tex_unlit_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_unlit_frag.spv")
+            &wgpu::include_spirv!("shaders/tex_unlit_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,
@@ -167,7 +166,7 @@ impl MeshPipeline {
     }
 
     pub fn textured(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -175,46 +174,50 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        1,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::Sampler { comparison: false },
-                    ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        count: None,
+                    },
                     // Base texture
-                    wgpu::BindGroupLayoutEntry::new(
-                        2,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/pbr_vert.spv")
+            &wgpu::include_spirv!("shaders/pbr_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_pbr_frag.spv")
+            &wgpu::include_spirv!("shaders/tex_pbr_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,
@@ -225,7 +228,7 @@ impl MeshPipeline {
     }
 
     pub fn textured_norm(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -233,56 +236,61 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        1,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::Sampler { comparison: false },
-                    ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        count: None,
+                    },
                     // Base texture
-                    wgpu::BindGroupLayoutEntry::new(
-                        2,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                     // Normal map
-                    wgpu::BindGroupLayoutEntry::new(
-                        3,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/pbr_vert.spv")
+            &wgpu::include_spirv!("shaders/pbr_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_norm_frag.spv")
+            &wgpu::include_spirv!("shaders/tex_norm_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,
@@ -293,7 +301,7 @@ impl MeshPipeline {
     }
 
     pub fn textured_norm_mat(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -301,74 +309,81 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        1,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::Sampler { comparison: false },
-                    ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        count: None,
+                    },
                     // Base texture
-                    wgpu::BindGroupLayoutEntry::new(
-                        2,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                     // Normal map
-                    wgpu::BindGroupLayoutEntry::new(
-                        3,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        4,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        5,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/pbr_vert.spv")
+            &wgpu::include_spirv!("shaders/pbr_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_norm_pbr_frag.spv")
+            &wgpu::include_spirv!("shaders/tex_norm_pbr_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,
@@ -379,7 +394,7 @@ impl MeshPipeline {
     }
 
     pub fn textured_emissive(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -387,83 +402,91 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        1,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::Sampler { comparison: false },
-                    ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        count: None,
+                    },
                     // Base texture
-                    wgpu::BindGroupLayoutEntry::new(
-                        2,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                     // Normal map
-                    wgpu::BindGroupLayoutEntry::new(
-                        3,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        4,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        5,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
-                    wgpu::BindGroupLayoutEntry::new(
-                        6,
-                        wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::SampledTexture {
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 6,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             multisampled: false,
-                            component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/pbr_vert.spv")
+            &wgpu::include_spirv!("shaders/pbr_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/tex_emiss_pbr_frag.spv")
+            &wgpu::include_spirv!("shaders/tex_emiss_pbr_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,
@@ -474,7 +497,7 @@ impl MeshPipeline {
     }
 
     pub fn untextured(
-        sc_desc: &wgpu::SwapChainDescriptor,
+        swapchain_format: wgpu::TextureFormat,
         device: &mut wgpu::Device,
         global_bind_group_layout: &wgpu::BindGroupLayout,
         mesh_bind_group_layout: &wgpu::BindGroupLayout,
@@ -482,31 +505,33 @@ impl MeshPipeline {
         let part_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
-                bindings: &[
+                entries: &[
                     // Material factors
-                    wgpu::BindGroupLayoutEntry::new(
-                        0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        wgpu::BindingType::UniformBuffer {
-                            dynamic: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
                                 mem::size_of::<MaterialFactorsUpload>() as wgpu::BufferAddress,
                             ),
                         },
-                    ),
+                        count: None,
+                    },
                 ],
             });
 
         // Get shaders
         let vs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/pbr_vert.spv")
+            &wgpu::include_spirv!("shaders/pbr_vert.spv")
         );
         let fs_module = device.create_shader_module(
-            wgpu::include_spirv!("shaders/untex_pbr_frag.spv")
+            &wgpu::include_spirv!("shaders/untex_pbr_frag.spv")
         );
 
         MeshPipeline::new(
-            sc_desc,
+            swapchain_format,
             device,
             global_bind_group_layout,
             mesh_bind_group_layout,

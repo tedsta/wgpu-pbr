@@ -3,7 +3,7 @@ pub use light::{PointLight, SpotLight};
 pub use mesh::{Mesh, MeshPass};
 pub use renderer::Renderer;
 pub use scene::{Scene, MeshId};
-pub use mesh::{MeshPartData, MeshPartGeometry};
+pub use mesh::{MeshPartData, MeshPartGeometry, mesh_parts_bbox};
 pub use self::gltf::GltfLoadError;
 pub use resources::{ResourceLoader, Resources};
 

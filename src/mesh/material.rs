@@ -15,6 +15,7 @@ pub enum MaterialKind {
     TexturedEmissive,
 }
 
+#[derive(Clone)]
 pub struct MaterialData {
     pub factors: MaterialFactors,
     pub lighting: bool,

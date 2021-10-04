@@ -9,5 +9,5 @@ mod mesh_pipeline;
 pub use geometry::{MeshPartGeometry, Vertex};
 pub use material::{Material, MaterialData, MaterialFactors, MaterialKind};
 pub use mesh::Mesh;
-pub use mesh_part::{MeshPart, MeshPartData};
+pub use mesh_part::{MeshPart, MeshPartData, mesh_parts_bbox};
 pub use mesh_pass::MeshPass;

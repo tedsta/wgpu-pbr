@@ -37,6 +37,10 @@ impl Scene {
         &mut self.meshes[id]
     }
 
+    pub fn mesh_mut(&mut self, id: MeshId) -> &mut Mesh {
+        &mut self.meshes[id]
+    }
+
     ////////////////////////////////////
 
     pub fn add_point_light(&mut self, point_light: PointLight) -> PointLightId {

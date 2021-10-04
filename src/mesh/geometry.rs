@@ -12,6 +12,7 @@ pub struct Vertex {
 unsafe impl bytemuck::Pod for Vertex { }
 unsafe impl bytemuck::Zeroable for Vertex { }
 
+#[derive(Clone)]
 pub struct MeshPartGeometry {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,

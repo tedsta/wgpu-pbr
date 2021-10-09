@@ -296,13 +296,10 @@ impl MeshPass {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth_texture,
                     depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(5.0),
+                        load: wgpu::LoadOp::Clear(1.0),
                         store: true,
                     }),
-                    stencil_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(0),
-                        store: true,
-                    }),
+                    stencil_ops: None,
                 }),
             });
             //rpass.set_blend_color(wgpu::Color::TRANSPARENT);

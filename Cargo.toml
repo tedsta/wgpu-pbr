@@ -8,7 +8,7 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wgpu = { version = "0.10.1", features = ["spirv"] }
+wgpu = { version = "0.11", features = ["spirv", "webgl"] }
 #wgpu = { git="https://github.com/gfx-rs/wgpu-rs", rev="64648522265e69ebc3a0b507e89315b8025baf9d" }
 tobj = "2"
 image = "0.23.4"

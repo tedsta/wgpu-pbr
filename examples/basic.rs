@@ -50,6 +50,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
             },
         ).await.unwrap();
     let adapter_features = adapter.features();
@@ -218,13 +219,14 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
                 );
 
                 // Render scene
-                let frame = surface.get_current_frame().expect("output frame");
+                let frame = surface.get_current_texture().expect("output frame");
                 let mut encoder =
                     renderer.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                         label: None,
                     });
-                renderer.render(&frame.output.texture.create_view(&wgpu::TextureViewDescriptor::default()), &mut encoder, &scene);
+                renderer.render(&frame.texture.create_view(&wgpu::TextureViewDescriptor::default()), &mut encoder, &scene);
                 renderer.queue.submit(Some(encoder.finish()));
+                frame.present();
             }
             _ => (),
         }

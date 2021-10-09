@@ -39,7 +39,7 @@ fn main() {
 
 
 async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
-    let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
+    let instance = wgpu::Instance::new(wgpu::Backends::all());
 
     let initial_screen_size = window.inner_size();
     let surface = unsafe { instance.create_surface(&window) };
@@ -60,7 +60,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: adapter_features & needed_extensions,
-                limits: wgpu::Limits::default(),
+                limits: wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits()),
             },
             None,
         ).await.unwrap();
@@ -132,7 +132,7 @@ async fn run_async(event_loop: EventLoop<()>, window: winit::window::Window) {
     let mut player_rot_x: f32 = 0.0;
     let mut player_rot_y: f32 = 0.0;
     let mut player_rot = Rotor3::identity();
-    let mut camera_distance: f32 = 15.0;
+    let mut camera_distance: f32 = 5.0;
     let mut prev_mouse_x: f64 = 0.0;
     let mut prev_mouse_y: f64 = 0.0;
 
